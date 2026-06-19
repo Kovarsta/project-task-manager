@@ -10,7 +10,6 @@ export async function POST(event: RequestEvent) {
 
 	// If user is admin, check they are not the last admin
 	if (member.role === 'ADMIN') {
-
 		const adminCount = await prisma.projectMember.count({
 			where: {
 				projectId,

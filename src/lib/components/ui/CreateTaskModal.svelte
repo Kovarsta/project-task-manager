@@ -3,10 +3,11 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
-	import UserSearchSelect from '$lib/components/ui/UserSearchSelect.svelte'
+	import UserSearchSelect from '$lib/components/ui/UserSearchSelect.svelte';
 	import { invalidateAll } from '$app/navigation';
 
 	let dueDateInput = $state<HTMLInputElement | null>(null);
+	let errors = $state({ title: false, description: false });
 
 	let {
 		open = $bindable(),
@@ -15,7 +16,7 @@
 		defaultStatus = 'TODO',
 		onCreated
 	} = $props<{
-		defaultStatus?: 'TODO' | 'DOING' | 'DONE'
+		defaultStatus?: 'TODO' | 'DOING' | 'DONE';
 		open: boolean;
 		projectId: number;
 		members: { id: number; user: { id: number; name: string } }[];
@@ -24,19 +25,36 @@
 
 	let title = $state('');
 	let description = $state('');
-	let status = $state<'TODO' | 'DOING' | 'DONE'>('TODO');	
+	let status = $state<'TODO' | 'DOING' | 'DONE'>('TODO');
 	let priority = $state('MEDIUM');
 	let dueDate = $state('');
 	let assigneeId = $state('');
 	let creating = $state(false);
 
 	$effect(() => {
-  if (open) {
-    status = defaultStatus
-  }
-})
+		if (open) {
+			status = defaultStatus;
+			errors = { title: false, description: false };
+		}
+	});
 
 	async function create() {
+		errors = { title: false, description: false };
+		let hasError = false;
+		if (!title.trim()) {
+			errors.title = true;
+			hasError = true;
+		}
+
+		if (description && description.trim().length > 2000) {
+			errors.description = true;
+			hasError = true;
+		}
+
+		if (hasError) {
+			toast.error('Please fix the errors above');
+			return;
+		}
 		if (!title.trim()) {
 			toast.error('Title is required');
 			return;
@@ -88,12 +106,26 @@
 		<div class="space-y-3">
 			<div>
 				<label class="text-sm font-medium">Name</label>
-				<Input bind:value={title} disabled={creating} />
+				<Input
+					bind:value={title}
+					disabled={creating}
+					class={errors.title ? 'border-red-500 focus-visible:ring-red-500' : ''}
+				/>
+				{#if errors.title}
+					<p class="mt-1 text-xs text-red-500">Title is required</p>
+				{/if}
 			</div>
 
 			<div>
 				<label class="text-sm font-medium">Description</label>
-				<Input bind:value={description} disabled={creating} />
+				<Input
+					bind:value={description}
+					disabled={creating}
+					class={errors.description ? 'border-red-500 focus-visible:ring-red-500' : ''}
+				/>
+				{#if errors.description}
+					<p class="mt-1 text-xs text-red-500">Description must be under 2000 characters</p>
+				{/if}
 			</div>
 
 			<div class="grid grid-cols-2 gap-3">
@@ -124,11 +156,11 @@
 				</div>
 				<div>
 					<label class="text-sm font-medium">Assignee</label>
-				<UserSearchSelect
-  bind:value={assigneeId}
-  members={members}
-  placeholder="Search project members..."
-/>	
+					<UserSearchSelect
+						bind:value={assigneeId}
+						{members}
+						placeholder="Search project members..."
+					/>
 				</div>
 			</div>
 		</div>
@@ -140,4 +172,3 @@
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
-
