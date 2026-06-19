@@ -1,16 +1,12 @@
 import { SvelteKitAuth } from '@auth/sveltekit';
 import GitHub from '@auth/sveltekit/providers/github';
 import { prisma } from '$lib/prisma';
-import {
-	AUTH_GITHUB_ID,
-	AUTH_GITHUB_SECRET,
-} from '$env/static/private';
-
+import { AUTH_GITHUB_ID, AUTH_GITHUB_SECRET } from '$env/static/private';
 
 export const { handle, signIn, signOut } = SvelteKitAuth({
 	providers: [
-        // Add Microsoft and its Entra ID once we're shipping
-        GitHub({
+		// Add Microsoft and its Entra ID once we're shipping
+		GitHub({
 			clientId: AUTH_GITHUB_ID,
 			clientSecret: AUTH_GITHUB_SECRET
 		})

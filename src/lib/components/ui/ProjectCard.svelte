@@ -19,4 +19,3 @@
 		Task left: {project._count.tasks}
 	</p>
 </button>
-

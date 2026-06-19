@@ -6,48 +6,53 @@ import { TaskStatus, TaskPriority } from '@prisma/client';
 
 // GET: View all task
 export async function GET(event: RequestEvent) {
-  const projectId = Number(event.params.id)
-  await requireProjectMember(event, projectId)
+	const projectId = Number(event.params.id);
+	await requireProjectMember(event, projectId);
 
-  const { searchParams } = event.url
-  const q        = searchParams.get('q')?.trim()
-  const status   = searchParams.get('status')
-  const priority = searchParams.get('priority')
-  const assignee = searchParams.get('assignee')
-  const sort     = searchParams.get('sort') ?? 'createdAt'
-  const order    = searchParams.get('order') ?? 'desc'
-  const page     = Number(searchParams.get('page')  ?? 1)
-  const limit    = Number(searchParams.get('limit') ?? 20)
-  const skip     = (page - 1) * limit
+	const { searchParams } = event.url;
+	const q = searchParams.get('q')?.trim();
+	const status = searchParams.get('status');
+	const priority = searchParams.get('priority');
+	const assignee = searchParams.get('assignee');
+	const sort = searchParams.get('sort') ?? 'createdAt';
+	const order = searchParams.get('order') ?? 'desc';
+	const page = Number(searchParams.get('page') ?? 1);
+	const limit = Number(searchParams.get('limit') ?? 20);
+	const skip = (page - 1) * limit;
 
-  const statusEnum   = Object.values(TaskStatus).includes(status as TaskStatus) ? status as TaskStatus : undefined
-  const priorityEnum = Object.values(TaskPriority).includes(priority as TaskPriority) ? priority as TaskPriority : undefined
+	const statusEnum = Object.values(TaskStatus).includes(status as TaskStatus)
+		? (status as TaskStatus)
+		: undefined;
+	const priorityEnum = Object.values(TaskPriority).includes(priority as TaskPriority)
+		? (priority as TaskPriority)
+		: undefined;
 
-  const where = {
-    projectId,
-    ...(statusEnum   && { status:     statusEnum }),
-    ...(priorityEnum && { priority:   priorityEnum }),
-    ...(assignee     && { assigneeId: Number(assignee) }),
-    ...(q && { title: { contains: q, mode: 'insensitive' as const } })
-  }
+	const where = {
+		projectId,
+		...(statusEnum && { status: statusEnum }),
+		...(priorityEnum && { priority: priorityEnum }),
+		...(assignee && { assigneeId: Number(assignee) }),
+		...(q && { title: { contains: q, mode: 'insensitive' as const } })
+	};
 
-  const [tasks, total] = await Promise.all([
-    prisma.task.findMany({
-      where,
-      include: {
-        assignee:  { select: { id: true, name: true, email: true } },
-        createdBy: { select: { id: true, name: true } }
-      },
-      orderBy: { [sort]: order },
-      skip, take: limit
-    }),
-    prisma.task.count({ where })
-  ])
+	const [tasks, total] = await Promise.all([
+		prisma.task.findMany({
+			where,
+			include: {
+				assignee: { select: { id: true, name: true, email: true } },
+				createdBy: { select: { id: true, name: true } }
+			},
+			orderBy: { [sort]: order },
+			skip,
+			take: limit
+		}),
+		prisma.task.count({ where })
+	]);
 
-  return json({
-    tasks,
-    meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
-  })
+	return json({
+		tasks,
+		meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
+	});
 }
 
 // POST: Create task
