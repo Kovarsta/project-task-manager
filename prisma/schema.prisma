@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum TaskStatus {
+  TODO
+  DOING
+  DONE
+}
+
+enum TaskPriority {
+  LOWEST
+  LOW
+  MEDIUM
+  HIGH
+  HIGHEST
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  microsoftId   String    @unique
+  name          String
+  email         String    @unique
+  isSuperAdmin  Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  createdProjects   Project[]         @relation("CreatedBy")
+  memberships       ProjectMember[]
+  invitesSent       ProjectInvite[]   @relation("InvitedBy")
+  invitesAccepted   ProjectInvite[]   @relation("AcceptedBy")
+  assignedTasks     Task[]            @relation("AssignedTo")
+  createdTasks      Task[]            @relation("TaskCreatedBy")
+  statusChanges     TaskStatusHistory[]
+}
+
+model Project {
+  id          Int       @id @default(autoincrement())
+  name        String
+  createdBy   User      @relation("CreatedBy", fields: [createdById], references: [id])
+  createdById Int
+  createdAt   DateTime  @default(now())
+
+  members     ProjectMember[]
+  invites     ProjectInvite[]
+  tasks       Task[]
+}
+
+model ProjectMember {
+  id        Int      @id @default(autoincrement())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId Int
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  role      Role     @default(MEMBER)
+  joinedAt  DateTime @default(now())
+
+  @@unique([projectId, userId])
+}
+
+model ProjectInvite {
+  id            Int          @id @default(autoincrement())
+  project       Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId     Int
+  invitedBy     User         @relation("InvitedBy", fields: [invitedById], references: [id])
+  invitedById   Int
+  invitedEmail  String
+  token         String       @unique @default(uuid())
+  status        InviteStatus @default(PENDING)
+  createdAt     DateTime     @default(now())
+  expiresAt     DateTime
+  acceptedAt    DateTime?
+  acceptedBy    User?        @relation("AcceptedBy", fields: [acceptedById], references: [id])
+  acceptedById  Int?
+}
+
+model Task {
+  id            Int          @id @default(autoincrement())
+  project       Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId     Int
+  title         String
+  description   String?
+  status        TaskStatus   @default(TODO)
+  priority      TaskPriority @default(MEDIUM)
+  assignee      User?        @relation("AssignedTo", fields: [assigneeId], references: [id])
+  assigneeId    Int?
+  createdBy     User         @relation("TaskCreatedBy", fields: [createdById], references: [id])
+  createdById   Int
+  dueDate       DateTime?
+  createdAt     DateTime     @default(now())
+  startedAt     DateTime?
+  completedAt   DateTime?
+
+  statusHistory TaskStatusHistory[]
+}
+
+model TaskStatusHistory {
+  id          Int        @id @default(autoincrement())
+  task        Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId      Int
+  changedBy   User       @relation(fields: [changedById], references: [id])
+  changedById Int
+  fromStatus  TaskStatus
+  toStatus    TaskStatus
+  changedAt   DateTime   @default(now())
+}

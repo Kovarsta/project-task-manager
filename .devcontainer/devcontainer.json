@@ -1,0 +1,47 @@
+{
+	"name": "Project Manager Dev",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "app",
+	"workspaceFolder": "/workspace",
+	"forwardPorts": [5173, 5555, 5432],
+	"portsAttributes": {
+		"5173": { "label": "SvelteKit" },
+		"5555": { "label": "Prisma Studio" },
+		"5432": { "label": "Postgres" }
+	},
+	"postCreateCommand": "sudo chown -R node:node /workspace && pnpm install && npx prisma db push",
+	"remoteUser": "node",
+	"features": {
+		"ghcr.io/devcontainers/features/common-utils:2": {
+			"configureZshAsDefaultShell": true,
+			"username": "node",
+			"userUid": "1000",
+			"userGid": "1000"
+		}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"svelte.svelte-vscode",
+				"prisma.prisma",
+				"esbenp.prettier-vscode",
+				"dbaeumer.vscode-eslint",
+				"bradlc.vscode-tailwindcss"
+			],
+			"settings": {
+				"editor.formatOnSave": true,
+				"editor.defaultFormatter": "esbenp.prettier-vscode",
+				"[svelte]": {
+					"editor.defaultFormatter": "svelte.svelte-vscode"
+				},
+				"editor.codeActionsOnSave": {
+					"source.fixAll.eslint": "explicit"
+				},
+				"eslint.validate": ["javascript", "typescript", "svelte"],
+				"[typescript]": {
+					"editor.defaultFormatter": "esbenp.prettier-vscode"
+				}
+			}
+		}
+	}
+}
