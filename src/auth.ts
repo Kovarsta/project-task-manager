@@ -1,16 +1,36 @@
 import { SvelteKitAuth } from '@auth/sveltekit';
 import GitHub from '@auth/sveltekit/providers/github';
+import MicrosoftEntraID from '@auth/sveltekit/providers/microsoft-entra-id';
 import { prisma } from '$lib/prisma';
-import { AUTH_GITHUB_ID, AUTH_GITHUB_SECRET } from '$env/static/private';
+import {
+	AUTH_GITHUB_ID,
+	AUTH_GITHUB_SECRET,
+	USE_MOCK_SSO,
+	AUTH_MICROSOFT_ENTRA_ID_ID,
+	AUTH_MICROSOFT_ENTRA_ID_SECRET,
+	AUTH_MICROSOFT_ENTRA_ID_ISSUER
+} from '$env/static/private';
 
-export const { handle, signIn, signOut } = SvelteKitAuth({
-	providers: [
-		// Add Microsoft and its Entra ID once we're shipping
+const providers = [];
+if (USE_MOCK_SSO) {
+	providers.push(
 		GitHub({
 			clientId: AUTH_GITHUB_ID,
 			clientSecret: AUTH_GITHUB_SECRET
 		})
-	],
+	);
+} else {
+	providers.push(
+		MicrosoftEntraID({
+			clientId: AUTH_MICROSOFT_ENTRA_ID_ID,
+			clientSecret: AUTH_MICROSOFT_ENTRA_ID_SECRET,
+			issuer: AUTH_MICROSOFT_ENTRA_ID_ISSUER
+		})
+	);
+}
+
+export const { handle, signIn, signOut } = SvelteKitAuth({
+	providers: providers,
 
 	callbacks: {
 		async session({ session }) {
