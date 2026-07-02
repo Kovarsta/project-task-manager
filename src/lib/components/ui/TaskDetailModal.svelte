@@ -96,6 +96,7 @@
 			onUpdate();
 		} finally {
 			saving = false;
+			open = false;
 		}
 	}
 
