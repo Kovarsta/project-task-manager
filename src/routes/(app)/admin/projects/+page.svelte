@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { Trash2 } from '@lucide/svelte';
+	import { Trash2, ArrowUp, ArrowDown } from '@lucide/svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -18,8 +18,17 @@
 	let currentPage = $state(data.meta.page);
 	let limit = $state(data.meta.limit);
 
-	type AdminSort = 'name' | 'members' | 'tasks';
-	let sortBy = $state<AdminSort>('name');
+	let sortField = $state<'name' | 'members' | 'tasks'>('name');
+	let sortDir = $state<'asc' | 'desc'>('asc');
+
+	function handleSortClick(field: typeof sortField) {
+		if (sortField === field) {
+			sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+		} else {
+			sortField = field;
+			sortDir = field === 'name' ? 'asc' : 'desc';
+		}
+	}
 
 	function reload() {
 		goto(`?page=${currentPage}&limit=${limit}`, { keepFocus: true });
@@ -30,9 +39,15 @@
 			p.name.toLowerCase().includes(search.toLowerCase())
 		);
 		return [...result].sort((a, b) => {
-			if (sortBy === 'members') return b._count.members - a._count.members;
-			if (sortBy === 'tasks') return b._count.tasks - a._count.tasks;
-			return a.name.localeCompare(b.name);
+			let cmp = 0;
+			if (sortField === 'members') {
+				cmp = a._count.members - b._count.members;
+			} else if (sortField === 'tasks') {
+				cmp = a._count.tasks - b._count.tasks;
+			} else {
+				cmp = a.name.localeCompare(b.name);
+			}
+			return sortDir === 'asc' ? cmp : -cmp;
 		});
 	});
 
@@ -56,12 +71,29 @@
 
 <div class="flex h-full flex-col">
 	<div class="flex-1 overflow-y-auto">
-		<Input bind:value={search} placeholder="Search" class="mb-4 max-w-sm" />
-		<select bind:value={sortBy} class="rounded border px-2 py-1.5 pr-6 text-sm">
-			<option value="name">Name A-Z</option>
-			<option value="members">Most Members</option>
-			<option value="tasks">Most Tasks</option>
-		</select>
+		<div class="mb-4 flex items-center gap-3">
+			<Input bind:value={search} placeholder="Search" class="max-w-sm" />
+			<div class="flex items-center gap-1">
+				<span class="text-xs text-muted-foreground mr-1">Sort by:</span>
+				{#each [['name', 'Name'], ['members', 'Members'], ['tasks', 'Tasks']] as [field, label] (field)}
+					<Button
+						variant={sortField === field ? 'secondary' : 'ghost'}
+						size="sm"
+						class="gap-1 text-xs h-8"
+						onclick={() => handleSortClick(field as any)}
+					>
+						{label}
+						{#if sortField === field}
+							{#if sortDir === 'asc'}
+								<ArrowUp class="h-3.5 w-3.5" />
+							{:else}
+								<ArrowDown class="h-3.5 w-3.5" />
+							{/if}
+						{/if}
+					</Button>
+				{/each}
+			</div>
+		</div>
 
 		<div class="overflow-hidden rounded-xl border">
 			<table class="w-full text-sm">

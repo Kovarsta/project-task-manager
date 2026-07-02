@@ -13,12 +13,15 @@ export type Project = {
 	_count: {
 		tasks: number;
 	};
+	_myTaskCount?: number;
+	_earliestDue?: string | null;
 };
 
 export type Task = {
   id:          number
   title:       string
   description: string | null
+  tags:        string[]
   status:      'TODO' | 'DOING' | 'DONE'
   priority:    'LOWEST' | 'LOW' | 'MEDIUM' | 'HIGH' | 'HIGHEST'
   dueDate:     string | null

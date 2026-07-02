@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { toast } from 'svelte-sonner';
-	import { Plus, Search } from '@lucide/svelte';
+	import { Plus, Search, ArrowUp, ArrowDown } from '@lucide/svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -21,32 +21,49 @@
 	let showCreate = $state(false);
 	let newName = $state('');
 	let creating = $state(false);
-	type SortOption = 'createdAt' | 'name' | 'tasks';
-	let sortBy = $state<SortOption>('createdAt');
+
+	let sortField = $state<'createdAt' | 'name' | 'tasks' | 'attention'>('createdAt');
+	let sortDir = $state<'asc' | 'desc'>('desc');
+
+	function handleSortClick(field: typeof sortField) {
+		if (sortField === field) {
+			sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+		} else {
+			sortField = field;
+			sortDir = field === 'name' ? 'asc' : 'desc';
+		}
+	}
 
 	const activeTab = $derived(page.url.searchParams.get('tab') === 'shared' ? 'shared' : 'my');
 
-	let filteredMy = $derived.by(() => {
-		let result = myProjects.filter((p: Project) =>
-			p.name.toLowerCase().includes(search.toLowerCase())
-		);
-		return [...result].sort((a, b) => {
-			if (sortBy === 'name') return a.name.localeCompare(b.name);
-			if (sortBy === 'tasks') return b._count.tasks - a._count.tasks;
-			return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-		});
-	});
+	function sortProjects(projects: Project[]) {
+		return [...projects]
+			.filter((p: Project) => p.name.toLowerCase().includes(search.toLowerCase()))
+			.sort((a, b) => {
+				let cmp = 0;
+				if (sortField === 'name') {
+					cmp = a.name.localeCompare(b.name);
+				} else if (sortField === 'tasks') {
+					cmp = a._count.tasks - b._count.tasks;
+				} else if (sortField === 'attention') {
+					const aCount = a._myTaskCount ?? 0;
+					const bCount = b._myTaskCount ?? 0;
+					if (aCount !== bCount) {
+						cmp = aCount - bCount;
+					} else {
+						const aDue = a._earliestDue ? new Date(a._earliestDue).getTime() : Infinity;
+						const bDue = b._earliestDue ? new Date(b._earliestDue).getTime() : Infinity;
+						cmp = bDue - aDue;
+					}
+				} else {
+					cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+				}
+				return sortDir === 'asc' ? cmp : -cmp;
+			});
+	}
 
-	let filteredShared = $derived.by(() => {
-		let result = sharedProjects.filter((p: Project) =>
-			p.name.toLowerCase().includes(search.toLowerCase())
-		);
-		return [...result].sort((a, b) => {
-			if (sortBy === 'name') return a.name.localeCompare(b.name);
-			if (sortBy === 'tasks') return b._count.tasks - a._count.tasks;
-			return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-		});
-	});
+	let filteredMy = $derived.by(() => sortProjects(myProjects));
+	let filteredShared = $derived.by(() => sortProjects(sharedProjects));
 
 	function reload() {
 		goto(`?page=${currentPage}&limit=${limit}`, { keepFocus: true });
@@ -104,11 +121,26 @@
 				onkeydown={(e: KeyboardEvent) => e.key === ' ' && search === '' && e.preventDefault()}
 			/>
 		</div>
-		<select bind:value={sortBy} class="rounded border px-2 py-1.5 pr-6 text-sm">
-			<option value="createdAt">Most Recent</option>
-			<option value="name">Name A-Z</option>
-			<option value="tasks">Tasks Remaining</option>
-		</select>
+		<div class="flex items-center gap-1">
+			<span class="text-xs text-muted-foreground mr-1">Sort by:</span>
+			{#each [['createdAt', 'Date'], ['name', 'Name'], ['tasks', 'Tasks'], ['attention', 'Attention']] as [field, label] (field)}
+				<Button
+					variant={sortField === field ? 'secondary' : 'ghost'}
+					size="sm"
+					class="gap-1 text-xs h-8"
+					onclick={() => handleSortClick(field as any)}
+				>
+					{label}
+					{#if sortField === field}
+						{#if sortDir === 'asc'}
+							<ArrowUp class="h-3.5 w-3.5" />
+						{:else}
+							<ArrowDown class="h-3.5 w-3.5" />
+						{/if}
+					{/if}
+				</Button>
+			{/each}
+		</div>
 		<Button
 			size="sm"
 			class="gap-1 bg-green-500 text-white hover:bg-green-600"
@@ -177,4 +209,3 @@
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
-

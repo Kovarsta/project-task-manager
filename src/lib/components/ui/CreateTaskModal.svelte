@@ -4,6 +4,8 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import UserSearchSelect from '$lib/components/ui/UserSearchSelect.svelte';
+	import TagInput from '$lib/components/ui/TagInput.svelte';
+	import RichTextEditor from '$lib/components/ui/RichTextEditor.svelte';
 	import { invalidateAll } from '$app/navigation';
 
 	let dueDateInput = $state<HTMLInputElement | null>(null);
@@ -25,6 +27,7 @@
 
 	let title = $state('');
 	let description = $state('');
+	let tags = $state<string[]>([]);
 	let status = $state<'TODO' | 'DOING' | 'DONE'>('TODO');
 	let priority = $state('MEDIUM');
 	let dueDate = $state('');
@@ -38,6 +41,11 @@
 		}
 	});
 
+	// Strip HTML tags to get plain text length for validation
+	function stripHtml(html: string) {
+		return html.replace(/<[^>]*>/g, '').trim();
+	}
+
 	async function create() {
 		errors = { title: false, description: false };
 		let hasError = false;
@@ -46,7 +54,8 @@
 			hasError = true;
 		}
 
-		if (description && description.trim().length > 2000) {
+		const plainDesc = stripHtml(description);
+		if (plainDesc.length > 2000) {
 			errors.description = true;
 			hasError = true;
 		}
@@ -55,10 +64,7 @@
 			toast.error('Please fix the errors above');
 			return;
 		}
-		if (!title.trim()) {
-			toast.error('Title is required');
-			return;
-		}
+
 		creating = true;
 		try {
 			const res = await fetch(`/api/projects/${projectId}/tasks`, {
@@ -66,7 +72,8 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					title: title.trim(),
-					description: description.trim() || null,
+					description: plainDesc ? description.trim() : null,
+					tags,
 					status,
 					priority,
 					dueDate: dueDate || null,
@@ -83,6 +90,7 @@
 			toast.success('Task created');
 			title = '';
 			description = '';
+			tags = [];
 			status = 'TODO';
 			priority = 'MEDIUM';
 			dueDate = '';
@@ -98,17 +106,21 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="max-w-md">
+	<Dialog.Content class="max-w-2xl">
 		<Dialog.Header>
 			<Dialog.Title>Create Task</Dialog.Title>
 		</Dialog.Header>
 
-		<div class="space-y-3">
+		<div class="space-y-4">
+			<!-- Title -->
 			<div>
-				<label class="text-sm font-medium">Name <span class="text-red-500">*</span></label>
+				<label class="mb-1 block text-sm font-medium"
+					>Name <span class="text-red-500">*</span></label
+				>
 				<Input
 					bind:value={title}
 					disabled={creating}
+					placeholder="Task title..."
 					class={errors.title ? 'border-red-500 focus-visible:ring-red-500' : ''}
 				/>
 				{#if errors.title}
@@ -116,21 +128,32 @@
 				{/if}
 			</div>
 
+			<!-- Description (rich text) -->
 			<div>
-				<label class="text-sm font-medium">Description</label>
-				<Input
-					bind:value={description}
+				<label class="mb-1 block text-sm font-medium">Description</label>
+				<RichTextEditor
+					bind:content={description}
 					disabled={creating}
-					class={errors.description ? 'border-red-500 focus-visible:ring-red-500' : ''}
+					placeholder="Describe the task..."
 				/>
 				{#if errors.description}
-					<p class="mt-1 text-xs text-red-500">Description must be under 2000 characters</p>
+					<p class="mt-1 text-xs text-red-500">Description plain text must be under 2000 characters</p>
 				{/if}
 			</div>
 
+			<!-- Tags -->
+			<div>
+				<label class="mb-1 block text-sm font-medium">Tags</label>
+				<TagInput bind:tags disabled={creating} />
+				<p class="mt-1 text-xs text-muted-foreground/60">
+					e.g. tag1, tag2, tag3... (press Enter or comma to add) · max 10 tags
+				</p>
+			</div>
+
+			<!-- Status / Priority -->
 			<div class="grid grid-cols-2 gap-3">
 				<div>
-					<label class="text-sm font-medium">Status</label>
+					<label class="mb-1 block text-sm font-medium">Status</label>
 					<select bind:value={status} class="w-full rounded border px-2 py-1.5 text-sm">
 						<option value="TODO">TODO</option>
 						<option value="DOING">DOING</option>
@@ -138,7 +161,7 @@
 					</select>
 				</div>
 				<div>
-					<label class="text-sm font-medium">Priority</label>
+					<label class="mb-1 block text-sm font-medium">Priority</label>
 					<select bind:value={priority} class="w-full rounded border px-2 py-1.5 text-sm">
 						<option value="LOWEST">Lowest</option>
 						<option value="LOW">Low</option>
@@ -149,13 +172,14 @@
 				</div>
 			</div>
 
+			<!-- Due Date / Assignee -->
 			<div class="grid grid-cols-2 gap-3">
 				<div onclick={() => dueDateInput?.showPicker?.()} class="cursor-pointer">
-					<label class="text-sm font-medium">Due Date</label>
+					<label class="mb-1 block text-sm font-medium">Due Date</label>
 					<Input type="date" bind:value={dueDate} bind:ref={dueDateInput} class="cursor-pointer" />
 				</div>
 				<div>
-					<label class="text-sm font-medium">Assignee</label>
+					<label class="mb-1 block text-sm font-medium">Assignee</label>
 					<UserSearchSelect
 						bind:value={assigneeId}
 						{members}

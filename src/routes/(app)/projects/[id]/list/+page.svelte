@@ -35,13 +35,26 @@
 			(t: Task) =>
 				t.title.toLowerCase().includes(search.toLowerCase()) ||
 				t.assignee?.name.toLowerCase().includes(search.toLowerCase()) ||
-				(t.dueDate && new Date(t.dueDate).toLocaleDateString().includes(search))
+				(t.dueDate && new Date(t.dueDate).toLocaleDateString().includes(search)) ||
+				t.tags.some((tag) => tag.toLowerCase().includes(search.toLowerCase()))
 		);
 
 		result = [...result].sort((a, b) => {
-			const aVal = a[sortField] ?? '';
-			const bVal = b[sortField] ?? '';
-			const cmp = String(aVal).localeCompare(String(bVal));
+			let aVal = '';
+			let bVal = '';
+
+			if (sortField === 'assignee') {
+				aVal = a.assignee?.name ?? '';
+				bVal = b.assignee?.name ?? '';
+			} else if (sortField === 'tags') {
+				aVal = (a.tags ?? []).join(', ');
+				bVal = (b.tags ?? []).join(', ');
+			} else {
+				aVal = String(a[sortField] ?? '');
+				bVal = String(b[sortField] ?? '');
+			}
+
+			const cmp = aVal.localeCompare(bVal);
 			return sortDir === 'asc' ? cmp : -cmp;
 		});
 
@@ -69,6 +82,28 @@
 		HIGH: 'text-orange-500',
 		HIGHEST: 'text-red-500'
 	};
+
+	const tagColors = [
+		'bg-blue-100 text-blue-800',
+		'bg-purple-100 text-purple-800',
+		'bg-green-100 text-green-800',
+		'bg-amber-100 text-amber-800',
+		'bg-rose-100 text-rose-800',
+		'bg-cyan-100 text-cyan-800'
+	];
+
+	function tagColor(index: number) {
+		return tagColors[index % tagColors.length];
+	}
+
+	function getDescriptionPreview(desc: string | null): string {
+		if (!desc) return '';
+		const plainText = desc.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+		if (plainText.length > 10) {
+			return plainText.slice(0, 10) + '...';
+		}
+		return plainText;
+	}
 </script>
 
 <div class="flex h-full flex-col">
@@ -78,7 +113,7 @@
 			<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 			<Input
 				bind:value={search}
-				placeholder="Search"
+				placeholder="Search title, assignee, due date, or tag..."
 				class="pl-9"
 				onkeydown={(e: KeyboardEvent) => e.key === ' ' && search === '' && e.preventDefault()}
 			/>
@@ -89,7 +124,7 @@
 			<table class="w-full text-sm">
 				<thead class="bg-muted/50">
 					<tr>
-						{#each [['title', 'Name'], ['description', 'Description'], ['status', 'Status'], ['priority', 'Priority'], ['dueDate', 'Due date']] as [field, label] (field)}
+						{#each [['title', 'Name'], ['status', 'Status'], ['priority', 'Priority'], ['dueDate', 'Due date'], ['assignee', 'Assignee'], ['tags', 'Tags']] as [field, label] (field)}
 							<th
 								class="cursor-pointer px-4 py-2 text-left font-medium select-none"
 								onclick={() => toggleSort(field as keyof Task)}
@@ -106,17 +141,23 @@
 								</span>
 							</th>
 						{/each}
-						<th class="px-4 py-2 text-left font-medium">Assignee</th>
 						<th class="w-10 px-4 py-2"></th>
 					</tr>
 				</thead>
 				<tbody>
 					{#each filtered as task (task.id)}
 						<tr class="cursor-pointer border-t hover:bg-accent/50" onclick={() => openTask(task)}>
-							<td class="px-4 py-2">{task.title}</td>
-							<td class="max-w-xs truncate px-4 py-2 text-muted-foreground"
-								>{task.description ?? '-'}</td
-							>
+							<td class="px-4 py-2 max-w-[220px] truncate">
+								<div class="truncate">
+									<p class="font-medium truncate">{task.title}</p>
+									{#if task.description}
+										<!-- Render HTML description as a truncated plain-text preview -->
+										<p class="mt-0.5 truncate text-xs text-muted-foreground">
+											{getDescriptionPreview(task.description)}
+										</p>
+									{/if}
+								</div>
+							</td>
 							<td class="px-4 py-2">{task.status}</td>
 							<td class="px-4 py-2 font-medium {priorityColors[task.priority]}">{task.priority}</td>
 							<td class="px-4 py-2">
@@ -124,6 +165,21 @@
 							</td>
 							<td class="px-4 py-2 text-muted-foreground">
 								{task.assignee?.name ?? '-'}
+							</td>
+							<td class="px-4 py-2">
+								{#if task.tags && task.tags.length > 0}
+									<div class="flex flex-wrap gap-1">
+										{#each task.tags as tag, i (tag)}
+											<span
+												class="inline-block rounded-full px-2 py-0.5 text-xs font-medium {tagColor(i)}"
+											>
+												{tag}
+											</span>
+										{/each}
+									</div>
+								{:else}
+									<span class="text-muted-foreground">-</span>
+								{/if}
 							</td>
 							<td class="px-4 py-2">
 								<button onclick={() => openTask(task)} class="rounded p-1 hover:bg-accent">
@@ -159,4 +215,3 @@
 		onUpdate={() => invalidateAll()}
 	/>
 {/if}
-
