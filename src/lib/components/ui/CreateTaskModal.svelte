@@ -105,7 +105,7 @@
 
 		<div class="space-y-3">
 			<div>
-				<label class="text-sm font-medium">Name</label>
+				<label class="text-sm font-medium">Name <span class="text-red-500">*</span></label>
 				<Input
 					bind:value={title}
 					disabled={creating}
