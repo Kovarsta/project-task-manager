@@ -35,9 +35,45 @@ export async function GET(event: RequestEvent) {
 		})
 	]);
 
+	// Augment each project with attention-sort data (tasks assigned to current user)
+	const allProjectIds = [...myProjects, ...sharedProjects].map((p) => p.id);
+
+	const assignedTasks = await prisma.task.findMany({
+		where: {
+			projectId: { in: allProjectIds },
+			assigneeId: user.id,
+			status: { not: 'DONE' }
+		},
+		select: { projectId: true, dueDate: true }
+	});
+
+	// Build lookup: projectId -> { count, earliestDue }
+	const attentionMap = new Map<number, { count: number; earliestDue: string | null }>();
+	for (const task of assignedTasks) {
+		const existing = attentionMap.get(task.projectId) ?? { count: 0, earliestDue: null };
+		const dueDateStr = task.dueDate ? task.dueDate.toISOString() : null;
+		const earliestDue =
+			existing.earliestDue === null
+				? dueDateStr
+				: dueDateStr === null
+					? existing.earliestDue
+					: dueDateStr < existing.earliestDue
+						? dueDateStr
+						: existing.earliestDue;
+		attentionMap.set(task.projectId, { count: existing.count + 1, earliestDue });
+	}
+
+	function augment(projects: typeof myProjects) {
+		return projects.map((p) => ({
+			...p,
+			_myTaskCount: attentionMap.get(p.id)?.count ?? 0,
+			_earliestDue: attentionMap.get(p.id)?.earliestDue ?? null
+		}));
+	}
+
 	return json({
-		myProjects,
-		sharedProjects,
+		myProjects: augment(myProjects),
+		sharedProjects: augment(sharedProjects),
 		meta: {
 			myTotal,
 			sharedTotal,
@@ -74,4 +110,3 @@ export async function POST(event: RequestEvent) {
 
 	return json(project, { status: 201 });
 }
-

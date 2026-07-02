@@ -97,6 +97,7 @@ model Task {
   projectId     Int
   title         String
   description   String?
+  tags          String[]     @default([])
   status        TaskStatus   @default(TODO)
   priority      TaskPriority @default(MEDIUM)
   assignee      User?        @relation("AssignedTo", fields: [assigneeId], references: [id])

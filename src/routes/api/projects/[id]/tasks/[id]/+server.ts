@@ -49,6 +49,14 @@ export async function PATCH(event: RequestEvent) {
 		body.description = desc ?? null;
 	}
 
+	if (body.tags !== undefined) {
+		const rawTags: string[] = Array.isArray(body.tags) ? body.tags : [];
+		const tags = rawTags.map((t: string) => String(t).trim().toLowerCase()).filter(Boolean);
+		if (tags.length > 10) throw error(400, 'Maximum 10 tags allowed');
+		if (tags.some((t: string) => t.length > 30)) throw error(400, 'Each tag must be under 30 characters');
+		body.tags = tags;
+	}
+
 	if (body.dueDate && new Date(body.dueDate) < new Date()) {
 		throw error(400, 'Due date cannot be in the past');
 	}
@@ -89,6 +97,7 @@ export async function PATCH(event: RequestEvent) {
 			data: {
 				...(body.title !== undefined && { title: body.title }),
 				...(body.description !== undefined && { description: body.description }),
+				...(body.tags !== undefined && { tags: body.tags }),
 				...(body.status !== undefined && { status: body.status }),
 				...(body.priority !== undefined && { priority: body.priority }),
 				...(body.dueDate !== undefined && {

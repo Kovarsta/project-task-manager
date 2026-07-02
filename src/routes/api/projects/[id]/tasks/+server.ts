@@ -14,6 +14,7 @@ export async function GET(event: RequestEvent) {
 	const status = searchParams.get('status');
 	const priority = searchParams.get('priority');
 	const assignee = searchParams.get('assignee');
+	const tag = searchParams.get('tag')?.trim();
 	const sort = searchParams.get('sort') ?? 'createdAt';
 	const order = searchParams.get('order') ?? 'desc';
 	const page = Number(searchParams.get('page') ?? 1);
@@ -32,6 +33,7 @@ export async function GET(event: RequestEvent) {
 		...(statusEnum && { status: statusEnum }),
 		...(priorityEnum && { priority: priorityEnum }),
 		...(assignee && { assigneeId: Number(assignee) }),
+		...(tag && { tags: { has: tag } }),
 		...(q && { title: { contains: q, mode: 'insensitive' as const } })
 	};
 
@@ -70,6 +72,12 @@ export async function POST(event: RequestEvent) {
 		throw error(400, 'Description must be under 2000 characters');
 	}
 
+	// Validate tags
+	const rawTags: string[] = Array.isArray(body.tags) ? body.tags : [];
+	const tags = rawTags.map((t: string) => String(t).trim().toLowerCase()).filter(Boolean);
+	if (tags.length > 10) throw error(400, 'Maximum 10 tags allowed');
+	if (tags.some((t: string) => t.length > 30)) throw error(400, 'Each tag must be under 30 characters');
+
 	if (body.dueDate && new Date(body.dueDate) < new Date()) {
 		throw error(400, 'Due date cannot be in the past');
 	}
@@ -88,6 +96,7 @@ export async function POST(event: RequestEvent) {
 			projectId,
 			title,
 			description: description ?? null,
+			tags,
 			status: body.status ?? 'TODO',
 			priority: body.priority ?? 'MEDIUM',
 			assigneeId: body.assigneeId ? Number(body.assigneeId) : null,
