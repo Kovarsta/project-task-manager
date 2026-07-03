@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
+	import { Search } from '@lucide/svelte';
 	import type { Task, Project, ProjectMember } from '$lib/type';
 	import { page } from '$app/state';
+	import { Input } from '$lib/components/ui/input';
 	import TaskDetailModal from '$lib/components/ui/TaskDetailModal.svelte';
 	import CreateTaskModal from '$lib/components/ui/CreateTaskModal.svelte';
 
@@ -24,6 +26,12 @@
 	let createDefaultStatus = $state<'TODO' | 'DOING' | 'DONE'>('TODO');
 
 	let draggedTask: Task | null = null;
+
+	let columnSearch = $state<Record<'TODO' | 'DOING' | 'DONE', string>>({
+		TODO: '',
+		DOING: '',
+		DONE: ''
+	});
 
 	const projectId = page.params.id;
 	const columns = [
@@ -87,6 +95,19 @@
 		}
 		return plainText;
 	}
+
+	function filterColumnTasks(tasks: Task[], query: string) {
+		const q = query.trim().toLowerCase();
+		if (!q) return tasks;
+
+		return tasks.filter(
+			(t) =>
+				t.title.toLowerCase().includes(q) ||
+				t.assignee?.name.toLowerCase().includes(q) ||
+				(t.dueDate && new Date(t.dueDate).toLocaleDateString().includes(q)) ||
+				t.tags.some((tag) => tag.toLowerCase().includes(q))
+		);
+	}
 </script>
 
 <div class="flex h-full gap-4">
@@ -98,8 +119,19 @@
 		>
 			<h3 class="mb-3 text-lg font-bold">{col.label}</h3>
 
+			<div class="relative mb-3">
+				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+				<Input
+					bind:value={columnSearch[col.key]}
+					placeholder="Search"
+					class="pl-9"
+					onkeydown={(e: KeyboardEvent) =>
+						e.key === ' ' && columnSearch[col.key] === '' && e.preventDefault()}
+				/>
+			</div>
+
 			<div class="flex flex-1 flex-col gap-2 overflow-y-auto">
-				{#each data.kanban[col.key] as task (task.id)}
+				{#each filterColumnTasks(data.kanban[col.key], columnSearch[col.key]) as task (task.id)}
 					<button
 						draggable="true"
 						ondragstart={() => onDragStart(task)}
