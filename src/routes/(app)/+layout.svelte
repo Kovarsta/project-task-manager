@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { signOut } from '@auth/sveltekit/client';
-	import { LayoutDashboard, FolderKanban, ChevronLeft, Shield } from '@lucide/svelte';
+	import { LayoutDashboard, FolderKanban, ChevronLeft, Shield, Moon, Sun } from '@lucide/svelte';
+	import { mode, toggleMode } from 'mode-watcher';
 	import { Toaster } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
@@ -79,7 +80,22 @@
 				<span class="text-sm font-semibold">Project Manager</span>
 			</div>
 
-			<DropdownMenu.Root>
+			<div class="flex items-center gap-1">
+				<button
+					type="button"
+					onclick={toggleMode}
+					class="rounded p-1 hover:bg-accent"
+					aria-label={mode.current === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+					title={mode.current === 'dark' ? 'Light mode' : 'Dark mode'}
+				>
+					{#if mode.current === 'dark'}
+						<Sun class="h-4 w-4" />
+					{:else}
+						<Moon class="h-4 w-4" />
+					{/if}
+				</button>
+
+				<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
 					<button class="flex items-center gap-2 rounded p-1 hover:bg-accent">
 						{#if data.session?.user?.image}
@@ -105,7 +121,8 @@
 						Đăng xuất
 					</DropdownMenu.Item>
 				</DropdownMenu.Content>
-			</DropdownMenu.Root>
+				</DropdownMenu.Root>
+			</div>
 		</header>
 
 		<!-- Page content -->

@@ -5,6 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { ArrowUp, ArrowDown } from '@lucide/svelte';
 	import Pagination from '$lib/components/ui/Pagination.svelte';
+	import NativeSelect from '$lib/components/ui/NativeSelect.svelte';
 
 	let { data } = $props<{
 		data: { users: any[]; meta: { page: number; limit: number; totalPages: number } };
@@ -108,14 +109,13 @@
 								<p class="text-xs text-muted-foreground">{user.email}</p>
 							</td>
 							<td class="px-4 py-2">
-								<select
+								<NativeSelect
 									value={user.isSuperAdmin ? 'true' : 'false'}
 									onchange={(e) => toggleSuperAdmin(user, e.currentTarget.value === 'true')}
-									class="rounded border px-2 py-1 pr-6 text-sm"
 								>
 									<option value="true">True</option>
 									<option value="false">False</option>
-								</select>
+								</NativeSelect>
 							</td>
 						</tr>
 					{/each}

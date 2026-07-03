@@ -6,6 +6,7 @@
 	import UserSearchSelect from '$lib/components/ui/UserSearchSelect.svelte';
 	import TagInput from '$lib/components/ui/TagInput.svelte';
 	import RichTextEditor from '$lib/components/ui/RichTextEditor.svelte';
+	import NativeSelect from '$lib/components/ui/NativeSelect.svelte';
 	import { invalidateAll } from '$app/navigation';
 
 	let dueDateInput = $state<HTMLInputElement | null>(null);
@@ -154,21 +155,21 @@
 			<div class="grid grid-cols-2 gap-3">
 				<div>
 					<label class="mb-1 block text-sm font-medium">Status</label>
-					<select bind:value={status} class="w-full rounded border px-2 py-1.5 text-sm">
+					<NativeSelect bind:value={status} class="w-full">
 						<option value="TODO">TODO</option>
 						<option value="DOING">DOING</option>
 						<option value="DONE">DONE</option>
-					</select>
+					</NativeSelect>
 				</div>
 				<div>
 					<label class="mb-1 block text-sm font-medium">Priority</label>
-					<select bind:value={priority} class="w-full rounded border px-2 py-1.5 text-sm">
+					<NativeSelect bind:value={priority} class="w-full">
 						<option value="LOWEST">Lowest</option>
 						<option value="LOW">Low</option>
 						<option value="MEDIUM">Medium</option>
 						<option value="HIGH">High</option>
 						<option value="HIGHEST">Highest</option>
-					</select>
+					</NativeSelect>
 				</div>
 			</div>
 

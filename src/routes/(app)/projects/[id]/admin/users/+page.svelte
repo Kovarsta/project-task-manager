@@ -8,6 +8,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import type { ProjectMember, Invite } from '$lib/type';
 	import UserSearchSelect from '$lib/components/ui/UserSearchSelect.svelte';
+	import NativeSelect from '$lib/components/ui/NativeSelect.svelte';
 
 	let { data } = $props<{
 		data: { members: ProjectMember[]; invites: Invite[] };
@@ -148,11 +149,11 @@
 <!-- Search + filter -->
 <div class="mb-4 flex gap-3">
 	<Input bind:value={search} placeholder="Search" class="max-w-sm" />
-	<select bind:value={roleFilter} class="rounded border px-8 text-sm">
+	<NativeSelect bind:value={roleFilter}>
 		<option value="">All roles</option>
 		<option value="ADMIN">Admin</option>
 		<option value="MEMBER">Member</option>
-	</select>
+	</NativeSelect>
 </div>
 
 <!-- Table -->
@@ -174,14 +175,13 @@
 						<p class="text-xs text-muted-foreground">{member.user.email}</p>
 					</td>
 					<td class="px-4 py-2">
-						<select
+						<NativeSelect
 							value={member.role}
 							onchange={(e) => changeRole(member, e.currentTarget.value as 'ADMIN' | 'MEMBER')}
-							class="rounded border px-2 py-1 pr-6 text-sm"
 						>
 							<option value="ADMIN">Admin</option>
 							<option value="MEMBER">Member</option>
-						</select>
+						</NativeSelect>
 					</td>
 					<td class="px-4 py-2">Accepted</td>
 					<td class="px-4 py-2">

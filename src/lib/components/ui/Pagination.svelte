@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ChevronLeft, ChevronRight } from '@lucide/svelte';
+	import NativeSelect from '$lib/components/ui/NativeSelect.svelte';
 
 	let {
 		page = $bindable(),
@@ -55,11 +56,11 @@
 
 	<div class="flex items-center gap-2 text-sm text-muted-foreground">
 		Result per page
-		<select value={limit} onchange={onLimitChange} class="rounded border px-2 py-1 pr-8">
+		<NativeSelect value={limit} onchange={onLimitChange}>
 			<option value={10}>10</option>
 			<option value={20}>20</option>
 			<option value={50}>50</option>
-		</select>
+		</NativeSelect>
 	</div>
 </div>
 

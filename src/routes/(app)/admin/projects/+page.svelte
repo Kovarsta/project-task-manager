@@ -75,7 +75,7 @@
 			<Input bind:value={search} placeholder="Search" class="max-w-sm" />
 			<div class="flex items-center gap-1">
 				<span class="text-xs text-muted-foreground mr-1">Sort by:</span>
-				{#each [['name', 'Name'], ['members', 'Members'], ['tasks', 'Tasks']] as [field, label] (field)}
+				{#each [['name', 'Name'], ['members', 'Members']] as [field, label] (field)}
 					<Button
 						variant={sortField === field ? 'secondary' : 'ghost'}
 						size="sm"
