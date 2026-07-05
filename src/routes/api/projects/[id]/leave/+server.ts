@@ -8,12 +8,16 @@ export async function POST(event: RequestEvent) {
 	const projectId = Number(event.params.id);
 	const { user, member } = await requireProjectMember(event, projectId);
 
+	if (member.isOwner) {
+		throw error(400, 'You are the owner. Transfer ownership to another member before leaving.');
+	}
+
 	// If user is admin, check they are not the last admin
 	if (member.role === 'ADMIN') {
 		const adminCount = await prisma.projectMember.count({
 			where: {
 				projectId,
-				role: 'ADMIN'
+				OR: [{ role: 'ADMIN' }, { isOwner: true }]
 			}
 		});
 
@@ -22,7 +26,6 @@ export async function POST(event: RequestEvent) {
 		}
 	}
 
-	// Unassign their tasks
 	await prisma.$transaction([
 		prisma.task.updateMany({
 			where: { projectId, assigneeId: user.id },

@@ -22,6 +22,7 @@ export async function DELETE(event: RequestEvent) {
 	});
 
 	if (!target) throw error(404, 'Member not found');
+	if (target.isOwner) throw error(403, 'Cannot remove the project owner');
 	if (target.role === 'ADMIN') throw error(403, 'Cannot remove another admin');
 
 	await prisma.projectMember.delete({
@@ -79,10 +80,11 @@ export async function PATCH(event: RequestEvent) {
 	});
 
 	if (!target) throw error(404, 'Member not found');
+	if (target.isOwner) throw error(403, 'Cannot change the project owner role');
 
 	if (target.role === 'ADMIN' && body.role === 'MEMBER') {
 		const adminCount = await prisma.projectMember.count({
-			where: { projectId, role: 'ADMIN' }
+			where: { projectId, OR: [{ role: 'ADMIN' }, { isOwner: true }] }
 		});
 		if (adminCount <= 1) {
 			throw error(400, 'Cannot demote the last admin');

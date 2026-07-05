@@ -34,7 +34,24 @@ export async function requireProjectAdmin(event: RequestEvent, projectId: number
 	});
 
 	if (!member) throw error(403, 'Forbidden');
-	if (member.role !== 'ADMIN') throw error(403, 'Forbidden');
+	if (member.role !== 'ADMIN' && !member.isOwner) throw error(403, 'Forbidden');
+	return user;
+}
+
+export async function requireProjectOwner(event: RequestEvent, projectId: number) {
+	const user = await requireAuth(event);
+
+	const member = await prisma.projectMember.findUnique({
+		where: {
+			projectId_userId: {
+				projectId,
+				userId: user.id
+			}
+		}
+	});
+
+	if (!member) throw error(403, 'Forbidden');
+	if (!member.isOwner) throw error(403, 'Forbidden');
 	return user;
 }
 
