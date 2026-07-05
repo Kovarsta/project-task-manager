@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireAuth } from '$lib/server/auth';
+import { logActivity } from '$lib/server/activity';
 import type { RequestEvent } from '@sveltejs/kit';
 
 // GET: View all projects
@@ -106,6 +107,15 @@ export async function POST(event: RequestEvent) {
 				}
 			}
 		}
+	});
+
+	await logActivity({
+		projectId: project.id,
+		userId: user.id,
+		action: 'project_created',
+		entityType: 'project',
+		entityId: project.id,
+		metadata: { name }
 	});
 
 	return json(project, { status: 201 });

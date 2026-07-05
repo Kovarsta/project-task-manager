@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireProjectAdmin } from '$lib/server/auth';
+import { logActivity } from '$lib/server/activity';
 import type { RequestEvent } from '@sveltejs/kit';
 import { sendInviteEmail } from '$lib/server/email';
 
@@ -67,6 +68,15 @@ export async function POST(event: RequestEvent) {
 			invitedEmail: email,
 			expiresAt
 		}
+	});
+
+	await logActivity({
+		projectId,
+		userId: user.id,
+		action: 'invite_sent',
+		entityType: 'invite',
+		entityId: invite.id,
+		metadata: { email }
 	});
 
 	// Return the full invite link

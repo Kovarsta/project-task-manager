@@ -50,6 +50,7 @@ model User {
   assignedTasks     Task[]            @relation("AssignedTo")
   createdTasks      Task[]            @relation("TaskCreatedBy")
   statusChanges     TaskStatusHistory[]
+  activityLogs      ActivityLog[]
 }
 
 model Project {
@@ -62,6 +63,7 @@ model Project {
   members     ProjectMember[]
   invites     ProjectInvite[]
   tasks       Task[]
+  activityLogs ActivityLog[]
 }
 
 model ProjectMember {
@@ -122,4 +124,17 @@ model TaskStatusHistory {
   fromStatus  TaskStatus
   toStatus    TaskStatus
   changedAt   DateTime   @default(now())
+}
+
+model ActivityLog {
+  id         Int      @id @default(autoincrement())
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId  Int
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  action     String
+  entityType String?
+  entityId   Int?
+  metadata   Json?
+  createdAt  DateTime @default(now())
 }

@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireProjectMember, requireProjectAdmin } from '$lib/server/auth';
+import { logActivity } from '$lib/server/activity';
 import type { RequestEvent } from '@sveltejs/kit';
 import { TaskStatus, TaskPriority } from '@prisma/client';
 
@@ -107,6 +108,15 @@ export async function POST(event: RequestEvent) {
 			assignee: { select: { id: true, name: true, email: true } },
 			createdBy: { select: { id: true, name: true } }
 		}
+	});
+
+	await logActivity({
+		projectId,
+		userId: user.id,
+		action: 'task_created',
+		entityType: 'task',
+		entityId: task.id,
+		metadata: { title, status: task.status, assigneeId: task.assigneeId }
 	});
 
 	return json(task, { status: 201 });

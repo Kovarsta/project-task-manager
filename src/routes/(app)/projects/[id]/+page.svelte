@@ -5,6 +5,16 @@
 	import type { Task } from '$lib/type';
 	import { page } from '$app/state';
 
+	type ActivityItem = {
+		id: number;
+		action: string;
+		entityType: string | null;
+		entityId: number | null;
+		metadata: Record<string, unknown> | null;
+		createdAt: string;
+		user: { id: number; name: string };
+	};
+
 	let { data } = $props<{
 		data: {
 			summary: {
@@ -16,6 +26,7 @@
 				done: number;
 				overdue: number;
 				urgentTasks: Task[];
+				recentActivity: ActivityItem[];
 				chart: { labels: string[]; data: number[]; colors: string[] };
 			};
 		};
@@ -65,6 +76,47 @@
 	function isOverdue(dueDateStr: string | null) {
 		if (!dueDateStr) return false;
 		return new Date(dueDateStr) < new Date();
+	}
+
+	function describeActivity(log: ActivityItem) {
+		switch (log.action) {
+			case 'project_created':
+				return 'created this project';
+			case 'task_created':
+				return `created task "${log.metadata?.title ?? ''}"`;
+			case 'task_completed':
+				return `completed task "${log.metadata?.title ?? ''}"`;
+			case 'task_started':
+				return `started task "${log.metadata?.title ?? ''}"`;
+			case 'task_status_changed':
+				return `moved task "${log.metadata?.title ?? ''}" from ${log.metadata?.oldStatus} to ${log.metadata?.newStatus}`;
+			case 'task_updated':
+				return `updated task "${log.metadata?.title ?? ''}"`;
+			case 'task_deleted':
+				return `deleted task "${log.metadata?.title ?? ''}"`;
+			case 'member_role_changed':
+				return `${log.metadata?.newRole === 'ADMIN' ? 'promoted' : 'demoted'} ${log.metadata?.name} to ${log.metadata?.newRole}`;
+			case 'member_removed':
+				return `removed ${log.metadata?.name} from the project`;
+			case 'member_joined':
+				return `${log.metadata?.name} joined the project`;
+			case 'invite_sent':
+				return `invited ${log.metadata?.email}`;
+			default:
+				return log.action;
+		}
+	}
+
+	function timeAgo(dateStr: string) {
+		const diff = Date.now() - new Date(dateStr).getTime();
+		const mins = Math.floor(diff / 60000);
+		if (mins < 1) return 'just now';
+		if (mins < 60) return `${mins}m ago`;
+		const hours = Math.floor(mins / 60);
+		if (hours < 24) return `${hours}h ago`;
+		const days = Math.floor(hours / 24);
+		if (days < 30) return `${days}d ago`;
+		return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 	}
 </script>
 
@@ -173,5 +225,26 @@
 				{/if}
 			</div>
 		</div>
+	</div>
+
+	<!-- Recent Activity -->
+	<div class="rounded-xl border bg-card p-5 shadow-sm">
+		<h3 class="mb-1 font-bold text-foreground">Recent Activity</h3>
+		<p class="mb-4 text-xs text-muted-foreground">Latest actions in this project</p>
+		{#if data.summary.recentActivity.length > 0}
+			<div class="space-y-2">
+				{#each data.summary.recentActivity as log (log.id)}
+					<div class="flex items-center gap-3 rounded-lg border bg-muted/20 px-3 py-2 text-sm">
+						<span class="shrink-0 font-medium text-foreground">{log.user.name}</span>
+						<span class="text-muted-foreground">{describeActivity(log)}</span>
+						<span class="ml-auto shrink-0 text-xs text-muted-foreground/60">{timeAgo(log.createdAt)}</span>
+					</div>
+				{/each}
+			</div>
+		{:else}
+			<div class="py-6 text-center text-sm text-muted-foreground">
+				No activity yet
+			</div>
+		{/if}
 	</div>
 </div>
