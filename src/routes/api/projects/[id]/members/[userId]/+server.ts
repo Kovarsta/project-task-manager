@@ -24,15 +24,9 @@ export async function DELETE(event: RequestEvent) {
 	if (!target) throw error(404, 'Member not found');
 	if (target.role === 'ADMIN') throw error(403, 'Cannot remove another admin');
 
-	await prisma.$transaction([
-		prisma.task.updateMany({
-			where: { projectId, assigneeId: targetId },
-			data: { assigneeId: null }
-		}),
-		prisma.projectMember.delete({
-			where: { projectId_userId: { projectId, userId: targetId } }
-		})
-	]);
+	await prisma.projectMember.delete({
+		where: { projectId_userId: { projectId, userId: targetId } }
+	});
 
 	await logActivity({
 		projectId,
