@@ -93,15 +93,16 @@
 			if (!res.ok) {
 				const err = await res.json();
 				toast.error(err.message);
+				creating = false;
 				return;
 			}
 
+			const project = await res.json();
 			showCreate = false;
 			newName = '';
 			creating = false;
-			toast.success('Project created');
 
-			await invalidateAll();
+			await goto(`/projects/${project.id}`);
 		} catch {
 			toast.error('Something went wrong');
 			creating = false;
