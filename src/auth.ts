@@ -50,13 +50,23 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
 		async signIn({ user }) {
 			if (!user.email) return false;
 
+			const existing = await prisma.user.findUnique({
+				where: { email: user.email },
+				select: { id: true, deactivatedAt: true }
+			});
+
+			if (existing?.deactivatedAt) return false;
+
+			const isFirstUser = !existing && (await prisma.user.count()) === 0;
+
 			await prisma.user.upsert({
 				where: { email: user.email },
 				update: { name: user.name ?? user.email },
 				create: {
 					email: user.email,
 					name: user.name ?? user.email,
-					microsoftId: user.id!
+					microsoftId: user.id!,
+					isSuperAdmin: isFirstUser
 				}
 			});
 

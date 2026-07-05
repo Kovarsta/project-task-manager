@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { UserPlus, Trash2, X } from '@lucide/svelte';
+	import { UserPlus, Trash2, X, Calendar, ListTodo } from '@lucide/svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -25,6 +25,9 @@
 	let confirmRemove = $state<ProjectMember | null>(null);
 	let showRemoveConfirm = $state(false);
 
+	let confirmRole = $state<{ member: ProjectMember; newRole: 'ADMIN' | 'MEMBER' } | null>(null);
+	let showRoleConfirm = $state(false);
+
 	let pendingInvites = $derived(data.invites.filter((i: Invite) => i.status === 'PENDING'));
 	let acceptedMembers = $derived(
 		data.members.filter((m: ProjectMember) => {
@@ -39,7 +42,8 @@
 	const totalMembers = $derived(data.members.length);
 	const adminCount = $derived(data.members.filter((m: ProjectMember) => m.role === 'ADMIN').length);
 
-	async function sendInvite() {
+	async function sendInvite(e: Event) {
+		e.preventDefault();
 		if (!inviteEmail.trim()) {
 			toast.error('Email is required');
 			return;
@@ -65,6 +69,32 @@
 		} finally {
 			inviting = false;
 		}
+	}
+
+	function askRoleChange(member: ProjectMember, newRole: 'ADMIN' | 'MEMBER') {
+		confirmRole = { member, newRole };
+		showRoleConfirm = true;
+	}
+
+	async function confirmRoleChange() {
+		if (!confirmRole) return;
+		const { member, newRole } = confirmRole;
+		const res = await fetch(`/api/projects/${projectId}/members/${member.user.id}`, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ role: newRole })
+		});
+
+		if (!res.ok) {
+			const err = await res.json();
+			toast.error(err.message);
+			return;
+		}
+
+		toast.success('Role updated');
+		showRoleConfirm = false;
+		confirmRole = null;
+		invalidateAll();
 	}
 
 	function askRemove(member: ProjectMember) {
@@ -105,22 +135,6 @@
 		invalidateAll();
 	}
 
-	async function changeRole(member: ProjectMember, newRole: 'ADMIN' | 'MEMBER') {
-		const res = await fetch(`/api/projects/${projectId}/members/${member.user.id}`, {
-			method: 'PATCH',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ role: newRole })
-		});
-
-		if (!res.ok) {
-			const err = await res.json();
-			toast.error(err.message);
-			return;
-		}
-
-		toast.success('Role updated');
-		invalidateAll();
-	}
 </script>
 
 <div class="mb-4 flex items-center justify-between">
@@ -161,58 +175,81 @@
 	<table class="w-full text-sm">
 		<thead class="bg-muted/50">
 			<tr>
-				<th class="px-4 py-2 text-left">User(s)</th>
-				<th class="px-4 py-2 text-left">Role</th>
-				<th class="px-4 py-2 text-left">Status</th>
-				<th class="w-20 px-4 py-2 text-left">Actions</th>
+				<th class="px-4 py-2 text-left">User</th>
+				<th class="w-44 px-4 py-2 text-left">Actions</th>
 			</tr>
 		</thead>
 		<tbody>
 			{#each acceptedMembers as member (member.id)}
 				<tr class="border-t">
-					<td class="px-4 py-2">
-						<p class="font-medium">{member.user.name}</p>
-						<p class="text-xs text-muted-foreground">{member.user.email}</p>
+					<td class="px-4 py-3">
+						<div class="flex items-center gap-2">
+							<span class="font-medium">{member.user.name}</span>
+							{#if member.role === 'ADMIN'}
+								<span class="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700 dark:bg-amber-900 dark:text-amber-300">Admin</span>
+							{/if}
+						</div>
+						<div class="text-xs text-muted-foreground">{member.user.email}</div>
+						<div class="mt-1.5 space-y-0.5 text-xs text-muted-foreground">
+							<div class="flex items-center gap-1">
+								<Calendar class="h-3 w-3" />
+								Joined {new Date(member.joinedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+							</div>
+							<div class="flex items-center gap-1">
+								<ListTodo class="h-3 w-3" />
+								{member._count?.tasks ?? 0} tasks assigned
+							</div>
+						</div>
 					</td>
-					<td class="px-4 py-2">
-						<NativeSelect
-							value={member.role}
-							onchange={(e) => changeRole(member, e.currentTarget.value as 'ADMIN' | 'MEMBER')}
-						>
-							<option value="ADMIN">Admin</option>
-							<option value="MEMBER">Member</option>
-						</NativeSelect>
-					</td>
-					<td class="px-4 py-2">Accepted</td>
-					<td class="px-4 py-2">
-						{#if member.role !== 'ADMIN'}
-							<button
-								onclick={() => askRemove(member)}
-								class="rounded p-1 text-red-500 hover:bg-accent"
+					<td class="px-4 py-3">
+						<div class="flex flex-col items-start gap-1.5">
+							<NativeSelect
+								value={member.role}
+								onchange={(e) => {
+									const newRole = e.currentTarget.value as 'ADMIN' | 'MEMBER';
+									if (newRole !== member.role) {
+										askRoleChange(member, newRole);
+									}
+									e.currentTarget.value = member.role;
+								}}
 							>
-								<Trash2 class="h-4 w-4" />
-							</button>
-						{/if}
+								<option value="ADMIN">Admin</option>
+								<option value="MEMBER">Member</option>
+							</NativeSelect>
+							{#if member.role !== 'ADMIN'}
+								<Button
+									variant="outline"
+									size="sm"
+									class="h-7 text-xs text-red-500 hover:text-red-600"
+									onclick={() => askRemove(member)}
+								>
+									<Trash2 class="h-3 w-3" />
+									Remove
+								</Button>
+							{/if}
+						</div>
 					</td>
 				</tr>
 			{/each}
 
 			{#each pendingInvites as invite (invite.id)}
-				<tr class="border-t bg-yellow-50/50">
-					<td class="px-4 py-2">
+				<tr class="border-t bg-yellow-50/50 dark:bg-yellow-950/20">
+					<td class="px-4 py-3">
 						<p class="font-medium">{invite.invitedEmail}</p>
+						<p class="mt-1 text-xs text-muted-foreground">
+							<span class="rounded bg-yellow-100 px-1.5 py-0.5 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">Pending</span>
+						</p>
 					</td>
-					<td class="px-4 py-2 text-muted-foreground">-</td>
-					<td class="px-4 py-2">
-						<span class="rounded bg-yellow-100 px-2 py-0.5 text-xs text-yellow-800">Pending</span>
-					</td>
-					<td class="px-4 py-2">
-						<button
+					<td class="px-4 py-3">
+						<Button
+							variant="outline"
+							size="sm"
+							class="h-7 text-xs text-red-500 hover:text-red-600"
 							onclick={() => revokeInvite(invite.id)}
-							class="rounded p-1 text-red-500 hover:bg-accent"
 						>
-							<X class="h-4 w-4" />
-						</button>
+							<X class="h-3 w-3" />
+							Revoke
+						</Button>
 					</td>
 				</tr>
 			{/each}
@@ -226,10 +263,54 @@
 		<Dialog.Header>
 			<Dialog.Title>Invite a member</Dialog.Title>
 		</Dialog.Header>
-		<UserSearchSelect bind:value={inviteEmail} placeholder="Search by name or email..." />
-		<Dialog.Footer>
-			<Button class="w-full" onclick={sendInvite} disabled={inviting}>
-				{inviting ? 'Sending...' : 'Send Invite'}
+		<form onsubmit={sendInvite}>
+			<UserSearchSelect bind:value={inviteEmail} placeholder="Search by name or email..." />
+			<Dialog.Footer>
+				<Button class="w-full" type="submit" disabled={inviting}>
+					{inviting ? 'Sending...' : 'Send Invite'}
+				</Button>
+			</Dialog.Footer>
+		</form>
+	</Dialog.Content>
+</Dialog.Root>
+
+<!-- Role change confirmation -->
+<Dialog.Root bind:open={showRoleConfirm}>
+	<Dialog.Content class="max-w-sm">
+		<Dialog.Header>
+			<Dialog.Title>Change member role</Dialog.Title>
+			<Dialog.Description>
+				{confirmRole?.member.user.name} will be {confirmRole?.newRole === 'ADMIN' ? 'promoted to' : 'demoted to'} {confirmRole?.newRole === 'ADMIN' ? 'Admin' : 'Member'}.
+			</Dialog.Description>
+		</Dialog.Header>
+		<div class="space-y-2 py-2">
+			<div class="rounded-lg border bg-muted/30 p-3">
+				<div class="font-medium">{confirmRole?.member.user.name}</div>
+				<div class="text-xs text-muted-foreground">{confirmRole?.member.user.email}</div>
+				<div class="mt-1 text-xs text-muted-foreground">
+					Current role: <strong>{confirmRole?.member.role === 'ADMIN' ? 'Admin' : 'Member'}</strong>
+					&rarr; New role: <strong>{confirmRole?.newRole === 'ADMIN' ? 'Admin' : 'Member'}</strong>
+				</div>
+			</div>
+			<p class="text-sm text-muted-foreground">
+				{confirmRole?.newRole === 'ADMIN'
+					? 'Admins can manage project settings, members, and all tasks.'
+					: 'Members can view and manage tasks assigned to them.'}
+			</p>
+		</div>
+		<Dialog.Footer class="gap-2">
+			<Button
+				variant="outline"
+				class="flex-1"
+				onclick={() => {
+					showRoleConfirm = false;
+					confirmRole = null;
+				}}
+			>
+				Cancel
+			</Button>
+			<Button class="flex-1" onclick={confirmRoleChange}>
+				{confirmRole?.newRole === 'ADMIN' ? 'Promote' : 'Demote'}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
