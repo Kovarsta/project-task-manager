@@ -14,13 +14,13 @@ export async function GET(event: RequestEvent) {
 
 	const [myProjects, myTotal] = await Promise.all([
 		prisma.project.findMany({
-			where: { createdById: user.id },
+			where: { createdById: user.id, members: { some: { userId: user.id } } },
 			include: { _count: { select: { tasks: { where: { status: { not: 'DONE' } } } } } },
 			orderBy: { createdAt: 'desc' },
 			skip,
 			take: limit
 		}),
-		prisma.project.count({ where: { createdById: user.id } })
+		prisma.project.count({ where: { createdById: user.id, members: { some: { userId: user.id } } } })
 	]);
 
 	const [sharedProjects, sharedTotal] = await Promise.all([
