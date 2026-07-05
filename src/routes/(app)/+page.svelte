@@ -110,46 +110,48 @@
 	}
 </script>
 
-<div class="p-6">
-	<!-- Top bar -->
-	<div class="mb-6 flex items-center gap-3">
-		<div class="relative max-w-md flex-1">
-			<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-			<Input
-				bind:value={search}
-				placeholder="Search"
-				class="pl-9"
-				onkeydown={(e: KeyboardEvent) => e.key === ' ' && search === '' && e.preventDefault()}
-			/>
-		</div>
-		<div class="flex items-center gap-1">
-			<span class="text-xs text-muted-foreground mr-1">Sort by:</span>
-			{#each [['createdAt', 'Date'], ['name', 'Name'], ['tasks', 'Tasks'], ['attention', 'Attention']] as [field, label] (field)}
+<div class="flex h-full flex-col p-6">
+	<div class="flex-1">
+		<div class="mb-6 flex items-start gap-3">
+			<div class="relative flex-1">
+				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+				<Input
+					bind:value={search}
+					placeholder="Search"
+					class="pl-9"
+					onkeydown={(e: KeyboardEvent) => e.key === ' ' && search === '' && e.preventDefault()}
+				/>
+			</div>
+			<div class="flex items-center gap-3">
+				<div class="flex items-center gap-1">
+					<span class="mr-1 text-xs text-muted-foreground">Sort by:</span>
+					{#each [['createdAt', 'Date'], ['name', 'Name'], ['tasks', 'Tasks'], ['attention', 'Attention']] as [field, label] (field)}
+						<Button
+							variant={sortField === field ? 'secondary' : 'ghost'}
+							size="sm"
+							class="gap-1 text-xs h-8"
+							onclick={() => handleSortClick(field as any)}
+						>
+							{label}
+							{#if sortField === field}
+								{#if sortDir === 'asc'}
+									<ArrowUp class="h-3.5 w-3.5" />
+								{:else}
+									<ArrowDown class="h-3.5 w-3.5" />
+								{/if}
+							{/if}
+						</Button>
+					{/each}
+				</div>
 				<Button
-					variant={sortField === field ? 'secondary' : 'ghost'}
 					size="sm"
-					class="gap-1 text-xs h-8"
-					onclick={() => handleSortClick(field as any)}
+					class="gap-1 bg-green-500 text-white hover:bg-green-600"
+					onclick={() => (showCreate = true)}
 				>
-					{label}
-					{#if sortField === field}
-						{#if sortDir === 'asc'}
-							<ArrowUp class="h-3.5 w-3.5" />
-						{:else}
-							<ArrowDown class="h-3.5 w-3.5" />
-						{/if}
-					{/if}
+					<Plus class="h-4 w-4" /> Create
 				</Button>
-			{/each}
+			</div>
 		</div>
-		<Button
-			size="sm"
-			class="gap-1 bg-green-500 text-white hover:bg-green-600"
-			onclick={() => (showCreate = true)}
-		>
-			<Plus class="h-4 w-4" /> Create
-		</Button>
-	</div>
 
 	{#if activeTab === 'my'}
 		<section>
@@ -178,12 +180,16 @@
 			{/if}
 		</section>
 	{/if}
-	<Pagination
-		bind:page={currentPage}
-		bind:limit
-		totalPages={activeTab === 'my' ? data.meta.myTotalPages : data.meta.sharedTotalPages}
-		onChange={reload}
-	/>
+	</div>
+
+	<div class="border-t pt-4">
+		<Pagination
+			bind:page={currentPage}
+			bind:limit
+			totalPages={activeTab === 'my' ? data.meta.myTotalPages : data.meta.sharedTotalPages}
+			onChange={reload}
+		/>
+	</div>
 </div>
 
 <!-- Create Modal -->
