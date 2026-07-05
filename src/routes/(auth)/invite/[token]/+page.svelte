@@ -4,6 +4,7 @@
 	import { toast } from 'svelte-sonner';
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
+	import { FolderKanban } from '@lucide/svelte';
 
 	let { data } = $props();
 	let accepting = $state(false);
@@ -31,30 +32,35 @@
 	}
 </script>
 
-<div class="flex min-h-screen items-center justify-center bg-muted/20 p-6">
-	{#if data.error}
-		<div class="max-w-sm rounded-xl border bg-background p-8 text-center">
-			<h2 class="mb-2 text-lg font-semibold">Invalid Invite</h2>
-			<p class="mb-6 text-sm text-muted-foreground">{data.error}</p>
-
-			{#if data.invitedEmail}
-				<Button variant="outline" class="mb-2 w-full" onclick={switchAccount}>
-					Sign in with a different account
+<div class="flex min-h-screen items-center justify-center bg-background">
+	<div class="w-full max-w-sm rounded-xl border bg-card p-8 shadow-sm">
+		{#if data.error}
+			<div class="flex flex-col items-center gap-2 text-center">
+				<FolderKanban class="h-10 w-10 text-muted-foreground" />
+				<h1 class="text-xl font-bold text-foreground">Invalid Invite</h1>
+				<p class="text-sm text-muted-foreground">{data.error}</p>
+			</div>
+			<div class="mt-6 space-y-2">
+				{#if data.invitedEmail}
+					<Button variant="outline" class="w-full" onclick={switchAccount}>
+						Sign in with a different account
+					</Button>
+				{/if}
+				<Button variant="ghost" class="w-full" onclick={() => goto('/')}>Go home</Button>
+			</div>
+		{:else}
+			<div class="flex flex-col items-center gap-2 text-center">
+				<FolderKanban class="h-10 w-10 text-foreground" />
+				<h1 class="text-xl font-bold text-foreground">Invitation</h1>
+				<p class="text-sm text-muted-foreground">
+					You have been invited to <strong>{data.projectName}</strong>
+				</p>
+			</div>
+			<div class="mt-6">
+				<Button class="w-full" onclick={accept} disabled={accepting}>
+					{accepting ? 'Joining...' : 'Accept Invitation'}
 				</Button>
-			{/if}
-
-			<Button variant="ghost" class="w-full" onclick={() => goto('/')}>Go home</Button>
-		</div>
-	{:else}
-		<div class="max-w-sm rounded-xl border border-green-200 bg-green-50 p-8 text-center">
-			<h2 class="mb-2 text-xl font-bold">Invitation</h2>
-			<p class="mb-6 text-sm text-muted-foreground">
-				You have been invited to <strong>{data.projectName}</strong>
-			</p>
-			<Button class="w-full" onclick={accept} disabled={accepting}>
-				{accepting ? 'Joining...' : 'Accept'}
-			</Button>
-		</div>
-	{/if}
+			</div>
+		{/if}
+	</div>
 </div>
-
