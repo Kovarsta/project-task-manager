@@ -45,10 +45,13 @@
 	}>();
 
 	const projectId = page.params.id;
-	const isAdmin = $derived(
-		data.project.members?.find((m: ProjectMember) => m.user.id === Number(data.session?.user?.id))
-			?.role === 'ADMIN'
+	const isOwner = $derived(
+		data.project.members?.find((m: ProjectMember) => m.user.id === Number(data.session?.user?.id))?.isOwner === true
 	);
+	const isAdmin = $derived(
+		data.project.members?.find((m: ProjectMember) => m.user.id === Number(data.session?.user?.id))?.role === 'ADMIN' || isOwner
+	);
+
 
 	let showCreateTask = $state(false);
 

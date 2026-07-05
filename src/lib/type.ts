@@ -1,6 +1,7 @@
 export type ProjectMember = {
   id:      number
   role:    'ADMIN' | 'MEMBER'
+  isOwner: boolean
   userId:  number
   joinedAt: string
   user: { id: number; name: string; email: string; createdAt: string; deactivatedAt: string | null }

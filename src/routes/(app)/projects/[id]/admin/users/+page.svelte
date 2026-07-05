@@ -40,7 +40,7 @@
 	);
 
 	const totalMembers = $derived(data.members.length);
-	const adminCount = $derived(data.members.filter((m: ProjectMember) => m.role === 'ADMIN').length);
+	const adminCount = $derived(data.members.filter((m: ProjectMember) => m.role === 'ADMIN' || m.isOwner).length);
 
 	async function sendInvite(e: Event) {
 		e.preventDefault();
@@ -185,7 +185,9 @@
 					<td class="px-4 py-3">
 						<div class="flex items-center gap-2">
 							<span class="font-medium">{member.user.name}</span>
-							{#if member.role === 'ADMIN'}
+							{#if member.isOwner}
+								<span class="rounded bg-purple-100 px-1.5 py-0.5 text-xs text-purple-700 dark:bg-purple-900 dark:text-purple-300">Owner</span>
+							{:else if member.role === 'ADMIN'}
 								<span class="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700 dark:bg-amber-900 dark:text-amber-300">Admin</span>
 							{/if}
 						</div>
@@ -203,29 +205,33 @@
 					</td>
 					<td class="px-4 py-3">
 						<div class="flex flex-col items-start gap-1.5">
-							<NativeSelect
-								value={member.role}
-								onchange={(e) => {
-									const newRole = e.currentTarget.value as 'ADMIN' | 'MEMBER';
-									if (newRole !== member.role) {
-										askRoleChange(member, newRole);
-									}
-									e.currentTarget.value = member.role;
-								}}
-							>
-								<option value="ADMIN">Admin</option>
-								<option value="MEMBER">Member</option>
-							</NativeSelect>
-							{#if member.role !== 'ADMIN'}
-								<Button
-									variant="outline"
-									size="sm"
-									class="h-7 text-xs text-red-500 hover:text-red-600"
-									onclick={() => askRemove(member)}
+							{#if member.isOwner}
+								<span class="text-xs text-muted-foreground">Owner — cannot modify</span>
+							{:else}
+								<NativeSelect
+									value={member.role}
+									onchange={(e) => {
+										const newRole = e.currentTarget.value as 'ADMIN' | 'MEMBER';
+										if (newRole !== member.role) {
+											askRoleChange(member, newRole);
+										}
+										e.currentTarget.value = member.role;
+									}}
 								>
-									<Trash2 class="h-3 w-3" />
-									Remove
-								</Button>
+									<option value="ADMIN">Admin</option>
+									<option value="MEMBER">Member</option>
+								</NativeSelect>
+								{#if member.role !== 'ADMIN'}
+									<Button
+										variant="outline"
+										size="sm"
+										class="h-7 text-xs text-red-500 hover:text-red-600"
+										onclick={() => askRemove(member)}
+									>
+										<Trash2 class="h-3 w-3" />
+										Remove
+									</Button>
+								{/if}
 							{/if}
 						</div>
 					</td>

@@ -103,7 +103,8 @@ export async function POST(event: RequestEvent) {
 			members: {
 				create: {
 					userId: user.id,
-					role: 'ADMIN'
+					role: 'ADMIN',
+					isOwner: true
 				}
 			}
 		}
