@@ -1,19 +1,22 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Chart from 'chart.js/auto';
-	import { AlertTriangle, Clock, CheckCircle2, PlusCircle, ArrowRight } from '@lucide/svelte';
+	import { AlertTriangle, Clock, CheckCircle2, ListTodo, ArrowRight } from '@lucide/svelte';
 	import type { Task } from '$lib/type';
 	import { page } from '$app/state';
 
 	let { data } = $props<{
 		data: {
 			summary: {
-				created: number;
-				completed: number;
-				inProgress: number;
+				total: number;
+				members: number;
+				completed7d: number;
+				todo: number;
+				doing: number;
+				done: number;
 				overdue: number;
 				urgentTasks: Task[];
-				chart: { labels: string[]; data: number[] };
+				chart: { labels: string[]; data: number[]; colors: string[] };
 			};
 		};
 	}>();
@@ -21,11 +24,11 @@
 	let canvasEl = $state<HTMLCanvasElement | null>(null);
 	let chartInstance: Chart | null = null;
 
-	const hasData = $derived(data.summary.created > 0 || data.summary.completed > 0);
+	const hasChartData = $derived(data.summary.todo > 0 || data.summary.doing > 0 || data.summary.done > 0);
 	const projectId = $derived(page.params.id);
 
 	onMount(() => {
-		if (!hasData || !canvasEl) return;
+		if (!hasChartData || !canvasEl) return;
 
 		chartInstance = new Chart(canvasEl, {
 			type: 'doughnut',
@@ -34,7 +37,7 @@
 				datasets: [
 					{
 						data: data.summary.chart.data,
-						backgroundColor: ['#f87171', '#4ade80'], // Created is Red (#f87171), Completed is Green (#4ade80)
+						backgroundColor: data.summary.chart.colors,
 						borderWidth: 0
 					}
 				]
@@ -68,24 +71,14 @@
 <div class="space-y-6">
 	<!-- Stats Grid -->
 	<div class="grid grid-cols-2 gap-4 md:grid-cols-4">
-		<!-- Completed -->
+		<!-- Total Tasks -->
 		<div class="rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40">
 			<div class="flex items-center justify-between">
-				<span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Completed</span>
-				<CheckCircle2 class="h-4 w-4 text-muted-foreground" />
+				<span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Tasks</span>
+				<ListTodo class="h-4 w-4 text-muted-foreground" />
 			</div>
-			<p class="mt-2 text-3xl font-extrabold text-foreground">{data.summary.completed}</p>
-			<p class="mt-1 text-xxs text-muted-foreground/80">In the last 7 days</p>
-		</div>
-
-		<!-- Created -->
-		<div class="rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40">
-			<div class="flex items-center justify-between">
-				<span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Created</span>
-				<PlusCircle class="h-4 w-4 text-muted-foreground" />
-			</div>
-			<p class="mt-2 text-3xl font-extrabold text-foreground">{data.summary.created}</p>
-			<p class="mt-1 text-xxs text-muted-foreground/80">In the last 7 days</p>
+			<p class="mt-2 text-3xl font-extrabold text-foreground">{data.summary.total}</p>
+			<p class="mt-1 text-xxs text-muted-foreground/80">{data.summary.members} members</p>
 		</div>
 
 		<!-- In Progress -->
@@ -94,8 +87,18 @@
 				<span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">In Progress</span>
 				<Clock class="h-4 w-4 text-muted-foreground" />
 			</div>
-			<p class="mt-2 text-3xl font-extrabold text-foreground">{data.summary.inProgress}</p>
+			<p class="mt-2 text-3xl font-extrabold text-foreground">{data.summary.doing}</p>
 			<p class="mt-1 text-xxs text-muted-foreground/80">Active tasks</p>
+		</div>
+
+		<!-- Completed (7d) -->
+		<div class="rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40">
+			<div class="flex items-center justify-between">
+				<span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Completed</span>
+				<CheckCircle2 class="h-4 w-4 text-muted-foreground" />
+			</div>
+			<p class="mt-2 text-3xl font-extrabold text-foreground">{data.summary.completed7d}</p>
+			<p class="mt-1 text-xxs text-muted-foreground/80">In the last 7 days</p>
 		</div>
 
 		<!-- Overdue -->
@@ -150,7 +153,7 @@
 					{/each}
 				{:else}
 					<div class="py-8 text-center text-sm text-muted-foreground">
-						No active tasks left in the project! 🎉
+						No active tasks left in the project!
 					</div>
 				{/if}
 			</div>
@@ -158,14 +161,14 @@
 
 		<!-- Right: Status Overview Chart -->
 		<div class="rounded-xl border bg-card p-5 shadow-sm lg:col-span-2">
-			<h3 class="mb-1 font-bold text-foreground">Activity Summary</h3>
-			<p class="mb-4 text-xs text-muted-foreground">Created vs Completed comparison (last 7 days)</p>
+			<h3 class="mb-1 font-bold text-foreground">Task Status</h3>
+			<p class="mb-4 text-xs text-muted-foreground">Breakdown of all tasks by status</p>
 			<div class="relative flex h-52 items-center justify-center">
-				{#if hasData}
+				{#if hasChartData}
 					<canvas bind:this={canvasEl}></canvas>
 				{:else}
 					<div class="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-						No project activity in the last 7 days
+						No tasks yet
 					</div>
 				{/if}
 			</div>
