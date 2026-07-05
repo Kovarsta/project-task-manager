@@ -18,7 +18,7 @@ export async function GET(event: RequestEvent) {
 
 	if (!project) throw error(404, 'Project not found');
 
-	const [completed7d, todo, doing, done, overdue, activeTasks] = await Promise.all([
+	const [completed7d, todo, doing, done, overdue, activeTasks, recentActivity] = await Promise.all([
 		// Tasks completed in last 7 days
 		prisma.task.count({
 			where: { projectId, completedAt: { gte: weekAgo } }
@@ -38,6 +38,14 @@ export async function GET(event: RequestEvent) {
 		prisma.task.findMany({
 			where: { projectId, status: { not: 'DONE' } },
 			include: { assignee: { select: { id: true, name: true, email: true } } }
+		}),
+
+		// Recent activity
+		prisma.activityLog.findMany({
+			where: { projectId },
+			include: { user: { select: { id: true, name: true } } },
+			orderBy: { createdAt: 'desc' },
+			take: 10
 		})
 	]);
 
@@ -63,6 +71,7 @@ export async function GET(event: RequestEvent) {
 		done,
 		overdue,
 		urgentTasks,
+		recentActivity,
 		chart: {
 			labels: ['To Do', 'In Progress', 'Done'],
 			data: [todo, doing, done],

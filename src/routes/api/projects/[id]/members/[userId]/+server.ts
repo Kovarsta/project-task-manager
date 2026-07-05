@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireProjectAdmin } from '$lib/server/auth';
+import { logActivity } from '$lib/server/activity';
 import type { RequestEvent } from '@sveltejs/kit';
 import { requireAuth } from '$lib/server/auth';
 
@@ -16,7 +17,8 @@ export async function DELETE(event: RequestEvent) {
 
 	// Only allows so if they are a member already
 	const target = await prisma.projectMember.findUnique({
-		where: { projectId_userId: { projectId, userId: targetId } }
+		where: { projectId_userId: { projectId, userId: targetId } },
+		include: { user: true }
 	});
 
 	if (!target) throw error(404, 'Member not found');
@@ -31,6 +33,15 @@ export async function DELETE(event: RequestEvent) {
 			where: { projectId_userId: { projectId, userId: targetId } }
 		})
 	]);
+
+	await logActivity({
+		projectId,
+		userId: admin.id,
+		action: 'member_removed',
+		entityType: 'member',
+		entityId: targetId,
+		metadata: { name: target.user.name }
+	});
 
 	return json({ success: true });
 }
@@ -61,7 +72,7 @@ export async function GET(event: RequestEvent) {
 export async function PATCH(event: RequestEvent) {
 	const projectId = Number(event.params.id);
 	const targetId = Number(event.params.userId);
-	await requireProjectAdmin(event, projectId);
+	const user = await requireProjectAdmin(event, projectId);
 
 	const body = await event.request.json();
 	if (body.role !== 'ADMIN' && body.role !== 'MEMBER') {
@@ -69,7 +80,8 @@ export async function PATCH(event: RequestEvent) {
 	}
 
 	const target = await prisma.projectMember.findUnique({
-		where: { projectId_userId: { projectId, userId: targetId } }
+		where: { projectId_userId: { projectId, userId: targetId } },
+		include: { user: true }
 	});
 
 	if (!target) throw error(404, 'Member not found');
@@ -87,6 +99,15 @@ export async function PATCH(event: RequestEvent) {
 		where: { projectId_userId: { projectId, userId: targetId } },
 		data: { role: body.role },
 		include: { user: true }
+	});
+
+	await logActivity({
+		projectId,
+		userId: user.id,
+		action: 'member_role_changed',
+		entityType: 'member',
+		entityId: targetId,
+		metadata: { name: target.user.name, oldRole: target.role, newRole: body.role }
 	});
 
 	return json(updated);

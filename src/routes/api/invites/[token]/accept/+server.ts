@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireAuth } from '$lib/server/auth';
+import { logActivity } from '$lib/server/activity';
 import type { RequestEvent } from '@sveltejs/kit';
 
 async function getValidInvite(token: string) {
@@ -65,6 +66,15 @@ export async function POST(event: RequestEvent) {
 			}
 		})
 	]);
+
+	await logActivity({
+		projectId: invite.projectId,
+		userId: user.id,
+		action: 'member_joined',
+		entityType: 'member',
+		entityId: user.id,
+		metadata: { name: user.name, email: user.email }
+	});
 
 	return json({ projectId: invite.projectId, alreadyMember: false });
 }

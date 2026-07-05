@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireProjectAdmin, requireProjectMember } from '$lib/server/auth';
+import { logActivity } from '$lib/server/activity';
 import type { RequestEvent } from '@sveltejs/kit';
 
 async function getTask(id: number) {
@@ -117,6 +118,27 @@ export async function PATCH(event: RequestEvent) {
 		});
 	});
 
+	const action = newStatus !== oldStatus
+		? newStatus === 'DONE' ? 'task_completed'
+		: newStatus === 'DOING' ? 'task_started'
+		: 'task_status_changed'
+		: 'task_updated';
+
+	await logActivity({
+		projectId: task.projectId,
+		userId: user.id,
+		action,
+		entityType: 'task',
+		entityId: taskId,
+		metadata: {
+			title: updatedTask.title,
+			oldStatus,
+			newStatus,
+			assigneeId: updatedTask.assigneeId,
+			oldAssigneeId: task.assigneeId
+		}
+	});
+
 	return json(updatedTask);
 }
 
@@ -124,9 +146,18 @@ export async function PATCH(event: RequestEvent) {
 export async function DELETE(event: RequestEvent) {
 	const taskId = Number(event.params.id);
 	const task = await getTask(taskId);
-	await requireProjectAdmin(event, task.projectId);
+	const user = await requireProjectAdmin(event, task.projectId);
 
 	await prisma.task.delete({ where: { id: taskId } });
+
+	await logActivity({
+		projectId: task.projectId,
+		userId: user.id,
+		action: 'task_deleted',
+		entityType: 'task',
+		entityId: taskId,
+		metadata: { title: task.title }
+	});
 
 	return json({ success: true });
 }
