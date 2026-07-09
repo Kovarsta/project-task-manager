@@ -60,6 +60,12 @@
 	let deadline = $state(data.project.deadline ?? '');
 	let tags = $state<string[]>(data.project.tags ?? []);
 	let saving = $state(false);
+
+	function stripHtml(html: string) {
+		return html.replace(/<[^>]*>/g, '').trim();
+	}
+
+	const descChars = $derived(stripHtml(description).length);
 	let showDeleteConfirm = $state(false);
 
 	$effect(() => {
@@ -144,7 +150,9 @@
 		<div class="mt-1">
 			<RichTextEditor bind:content={description} placeholder="Describe the project..." />
 		</div>
-		<p class="mt-1 text-xs text-muted-foreground/60">Max 60 words</p>
+		<p class="mt-1 text-xs {descChars > 60 ? 'text-red-500' : 'text-muted-foreground/60'}">
+			{descChars}/60 characters
+		</p>
 	</div>
 
 	<!-- Deadline -->
