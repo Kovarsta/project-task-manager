@@ -156,7 +156,7 @@
 		{#if data.project.tags && data.project.tags.length > 0}
 			<div class="mt-2 flex flex-wrap items-center gap-1.5">
 				{#each data.project.tags as tag, i (tag)}
-					<span class="rounded-full px-2 py-0.5 text-xs font-medium {tagColor(i)}">
+					<span class="rounded-full px-1 py-0.5 text-xs font-medium {tagColor(i)}">
 						{tag}
 					</span>
 				{/each}

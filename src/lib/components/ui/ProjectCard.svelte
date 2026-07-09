@@ -74,7 +74,7 @@
 	<div class="min-w-0 flex-1">
 		<div class="flex items-center gap-2">
 			<p class="truncate text-xl font-semibold">{project.name}</p>
-			{#if project.status && project.status !== 'ACTIVE'}
+			{#if project.status}
 				<span
 					class="text-xxs shrink-0 rounded-full px-2 py-0.5 font-medium {statusColors[
 						project.status
@@ -107,14 +107,11 @@
 			{/if}
 
 			{#if project.tags && project.tags.length > 0}
-				{#each project.tags.slice(0, 3) as tag, i (tag)}
-					<span class="text-xxs rounded-full px-1.5 py-0.5 font-medium {tagColor(i)}">
+				{#each project.tags as tag, i (tag)}
+					<span class="text-xs rounded-full px-1 py-0.5 font-medium {tagColor(i)}">
 						{tag}
 					</span>
 				{/each}
-				{#if project.tags.length > 3}
-					<span class="text-xxs text-muted-foreground">+{project.tags.length - 3}</span>
-				{/if}
 			{:else}
 				<span class="text-xs text-muted-foreground/40 italic">No tags</span>
 			{/if}

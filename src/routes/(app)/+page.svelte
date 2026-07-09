@@ -16,10 +16,11 @@
 	let currentPage = $state(data.meta.page);
 	let limit = $state(data.meta.limit);
 	let errors = $state({ title: false, description: false });
+	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 	let myProjects = $derived<Project[]>(data.myProjects ?? []);
 	let sharedProjects = $derived<Project[]>(data.sharedProjects ?? []);
-	let search = $state('');
+	let search = $state(page.url.searchParams.get('q') ?? '');
 	let showCreate = $state(false);
 	let newName = $state('');
 	let newDescription = $state('');
@@ -29,6 +30,19 @@
 
 	function stripHtml(html: string) {
 		return html.replace(/<[^>]*>/g, '').trim();
+	}
+
+	function onSearchInput(value: string) {
+		search = value;
+		clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => {
+			currentPage = 1;
+			const params = new URLSearchParams({ page: '1', limit: String(limit) });
+			if (value) params.set('q', value);
+			const tab = page.url.searchParams.get('tab');
+			if (tab) params.set('tab', tab);
+			goto(`?${params}`, { keepFocus: true, replaceState: true });
+		}, 300);
 	}
 
 	const descChars = $derived(stripHtml(newDescription).length);
@@ -48,9 +62,7 @@
 	const activeTab = $derived(page.url.searchParams.get('tab') === 'shared' ? 'shared' : 'my');
 
 	function sortProjects(projects: Project[]) {
-		return [...projects]
-			.filter((p: Project) => p.name.toLowerCase().includes(search.toLowerCase()))
-			.sort((a, b) => {
+		return [...projects].sort((a, b) => {
 				let cmp = 0;
 				if (sortField === 'name') {
 					cmp = a.name.localeCompare(b.name);
@@ -77,7 +89,12 @@
 	let filteredShared = $derived.by(() => sortProjects(sharedProjects));
 
 	function reload() {
-		goto(`?page=${currentPage}&limit=${limit}`, { keepFocus: true });
+		const params = new URLSearchParams({ page: String(currentPage), limit: String(limit) });
+		const q = page.url.searchParams.get('q');
+		const tab = page.url.searchParams.get('tab');
+		if (q) params.set('q', q);
+		if (tab) params.set('tab', tab);
+		goto(`?${params}`, { keepFocus: true });
 	}
 
 	async function createProject() {
@@ -135,7 +152,8 @@
 			<div class="relative max-w-md">
 				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 				<Input
-					bind:value={search}
+					value={search}
+					oninput={(e: Event) => onSearchInput((e.target as HTMLInputElement).value)}
 					placeholder="Search"
 					class="pl-9"
 					onkeydown={(e: KeyboardEvent) => e.key === ' ' && search === '' && e.preventDefault()}
