@@ -90,12 +90,15 @@ export async function PATCH(event: RequestEvent) {
 	return json(project);
 }
 
-// DELETE: duh
+// DELETE: deactivate (soft delete)
 export async function DELETE(event: RequestEvent) {
 	const projectId = getProjectId(event);
 	await requireProjectAdmin(event, projectId);
 
-	await prisma.project.delete({ where: { id: projectId } });
+	await prisma.project.update({
+		where: { id: projectId },
+		data: { deactivatedAt: new Date() }
+	});
 
 	return json({ success: true });
 }
