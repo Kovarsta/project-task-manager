@@ -3,7 +3,7 @@ import { MailtrapTransport } from 'mailtrap';
 import { env } from '$env/dynamic/private';
 
 const transport = nodemailer.createTransport(
-	new MailtrapTransport({ token: env.MAILTRAP_TOKEN! })
+	MailtrapTransport({ token: env.MAILTRAP_TOKEN! })
 );
 
 export async function sendInviteEmail(to: string, projectName: string, link: string) {
@@ -73,6 +73,7 @@ export async function sendInviteEmail(to: string, projectName: string, link: str
 			html
 		});
 	} catch (err) {
-		throw new Error('Failed to send invite email:', { cause: err });
+		console.error('Failed to send invite email:', err);
+		throw new Error('Failed to send invite email');
 	}
 }
