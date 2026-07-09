@@ -7,6 +7,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import NativeSelect from '$lib/components/ui/NativeSelect.svelte';
 	import TagInput from '$lib/components/ui/TagInput.svelte';
+	import RichTextEditor from '$lib/components/ui/RichTextEditor.svelte';
 	import UserSearchSelect from '$lib/components/ui/UserSearchSelect.svelte';
 
 	let { data } = $props<{
@@ -141,11 +142,7 @@
 	<div>
 		<label class="text-sm font-medium">Description</label>
 		<div class="mt-1">
-			<textarea
-				bind:value={description}
-				placeholder="Describe the project..."
-				class="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/60 focus-visible:ring-3 focus-visible:ring-ring/50"
-			></textarea>
+			<RichTextEditor bind:content={description} placeholder="Describe the project..." />
 		</div>
 	</div>
 

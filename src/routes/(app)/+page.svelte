@@ -7,6 +7,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import ProjectCard from '$lib/components/ui/ProjectCard.svelte';
 	import TagInput from '$lib/components/ui/TagInput.svelte';
+	import RichTextEditor from '$lib/components/ui/RichTextEditor.svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { Project } from '$lib/type.js';
 	import Pagination from '$lib/components/ui/Pagination.svelte';
@@ -226,11 +227,7 @@
 
 			<div>
 				<label class="mb-1 block text-sm font-medium">Description</label>
-				<textarea
-					bind:value={newDescription}
-					placeholder="Describe the project..."
-					class="min-h-20 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/60 focus-visible:ring-3 focus-visible:ring-ring/50"
-				></textarea>
+				<RichTextEditor bind:content={newDescription} placeholder="Describe the project..." />
 			</div>
 
 			<div>
