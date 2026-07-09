@@ -1,14 +1,12 @@
 import nodemailer from 'nodemailer';
+import { MailtrapTransport } from 'mailtrap';
 import { env } from '$env/dynamic/private';
 
-const transporter = nodemailer.createTransport({
-	host: env.SMTP_HOST ?? 'sandbox.smtp.mailtrap.io',
-	port: Number(env.SMTP_PORT ?? 2525),
-	auth: {
-		user: env.SMTP_USER,
-		pass: env.SMTP_PASS
-	}
-});
+const transport = nodemailer.createTransport(
+	MailtrapTransport({
+		token: env.MAILTRAP_TOKEN!
+	})
+);
 
 export async function sendInviteEmail(to: string, projectName: string, link: string) {
 	const html = `<!DOCTYPE html>
@@ -70,8 +68,8 @@ export async function sendInviteEmail(to: string, projectName: string, link: str
 </html>`;
 
 	try {
-		await transporter.sendMail({
-			from: env.EMAIL_FROM_ADDRESS ?? 'noreply@mailtrap.io',
+		await transport.sendMail({
+			from: { address: env.EMAIL_FROM_ADDRESS ?? 'hello@demomailtrap.co', name: 'Project Manager' },
 			to,
 			subject: `You've been invited to ${projectName}`,
 			html
