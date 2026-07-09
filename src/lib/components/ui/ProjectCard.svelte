@@ -33,18 +33,6 @@
 		return tagColors[index % tagColors.length];
 	}
 
-	function stripHtml(html: string) {
-		return html.replace(/<[^>]*>/g, '').trim();
-	}
-
-	function descriptionPreview(html: string | null) {
-		if (!html) return null;
-		const text = stripHtml(html);
-		if (!text) return null;
-		if (text.length <= 60) return text;
-		return text.slice(0, 60) + '...';
-	}
-
 	function isOverdue(dateStr: string | null) {
 		if (!dateStr) return false;
 		return new Date(dateStr) < new Date();
@@ -62,8 +50,6 @@
 				return status;
 		}
 	}
-
-	const preview = $derived(descriptionPreview(project.description));
 </script>
 
 <button
@@ -85,9 +71,13 @@
 			{/if}
 		</div>
 
-		<p class="mt-1 text-xs {preview ? 'text-muted-foreground' : 'text-muted-foreground/40 italic'}">
-			{preview ?? 'No Description'}
-		</p>
+		{#if project.description}
+			<div class="mt-1 line-clamp-2 text-xs text-muted-foreground [&_a]:text-blue-500 [&_a]:underline">
+				{@html project.description}
+			</div>
+		{:else}
+			<p class="mt-1 text-xs text-muted-foreground/40 italic">No Description</p>
+		{/if}
 
 		<div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
 			{#if project.deadline}
