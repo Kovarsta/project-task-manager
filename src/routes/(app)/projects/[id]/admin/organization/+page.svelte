@@ -5,9 +5,26 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import NativeSelect from '$lib/components/ui/NativeSelect.svelte';
+	import TagInput from '$lib/components/ui/TagInput.svelte';
 	import UserSearchSelect from '$lib/components/ui/UserSearchSelect.svelte';
 
-	let { data } = $props<{ data: { project: { name: string }; admins: Array<{ id: number; role: string; user: { id: number; name: string; email: string } }> } }>();
+	let { data } = $props<{
+		data: {
+			project: {
+				name: string;
+				status: string;
+				description: string | null;
+				deadline: string | null;
+				tags: string[];
+			};
+			admins: Array<{
+				id: number;
+				role: string;
+				user: { id: number; name: string; email: string };
+			}>;
+		};
+	}>();
 	const projectId = page.params.id;
 
 	let transferUserId = $state('');
@@ -37,20 +54,38 @@
 	}
 
 	let name = $state(data.project.name);
-	let renaming = $state(false);
+	let status = $state(data.project.status);
+	let description = $state(data.project.description ?? '');
+	let deadline = $state(data.project.deadline ?? '');
+	let tags = $state<string[]>(data.project.tags ?? []);
+	let saving = $state(false);
 	let showDeleteConfirm = $state(false);
 
-	async function rename() {
+	$effect(() => {
+		name = data.project.name;
+		status = data.project.status;
+		description = data.project.description ?? '';
+		deadline = data.project.deadline ?? '';
+		tags = data.project.tags ?? [];
+	});
+
+	async function saveSettings() {
 		if (!name.trim()) {
 			toast.error('Project name is required');
 			return;
 		}
-		renaming = true;
+		saving = true;
 		try {
 			const res = await fetch(`/api/projects/${projectId}`, {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ name: name.trim() })
+				body: JSON.stringify({
+					name: name.trim(),
+					status,
+					description: description.trim() || null,
+					deadline: deadline || null,
+					tags
+				})
 			});
 
 			if (!res.ok) {
@@ -59,9 +94,10 @@
 				return;
 			}
 
-			toast.success('Project renamed');
+			toast.success('Project settings saved');
+			await invalidateAll();
 		} finally {
-			renaming = false;
+			saving = false;
 		}
 	}
 
@@ -79,14 +115,84 @@
 
 <h2 class="mb-6 text-xl font-bold">Organization</h2>
 
+<div class="mb-8 max-w-lg space-y-6">
+	<!-- Status -->
+	<div>
+		<label class="text-sm font-medium">Status</label>
+		<div class="mt-1">
+			<NativeSelect bind:value={status} class="w-full">
+				<option value="ACTIVE">Active</option>
+				<option value="ON_HOLD">On Hold</option>
+				<option value="CANCELED">Canceled</option>
+				<option value="COMPLETE">Complete</option>
+			</NativeSelect>
+		</div>
+	</div>
+
+	<!-- Name -->
+	<div>
+		<label class="text-sm font-medium">Project Name</label>
+		<div class="mt-1">
+			<Input bind:value={name} />
+		</div>
+	</div>
+
+	<!-- Description -->
+	<div>
+		<label class="text-sm font-medium">Description</label>
+		<div class="mt-1">
+			<textarea
+				bind:value={description}
+				placeholder="Describe the project..."
+				class="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/60 focus-visible:ring-3 focus-visible:ring-ring/50"
+			></textarea>
+		</div>
+	</div>
+
+	<!-- Deadline -->
+	<div>
+		<label class="text-sm font-medium">Deadline</label>
+		<div class="mt-1">
+			<Input type="date" bind:value={deadline} />
+		</div>
+	</div>
+
+	<!-- Tags -->
+	<div>
+		<label class="text-sm font-medium">Tags</label>
+		<div class="mt-1">
+			<TagInput bind:tags />
+		</div>
+		<p class="mt-1 text-xs text-muted-foreground/60">
+			e.g. tag1, tag2, tag3... (press Enter or comma to add) · max 10 tags
+		</p>
+	</div>
+
+	<!-- Save -->
+	<div class="flex gap-2">
+		<Button onclick={saveSettings} disabled={saving}>
+			{saving ? 'Saving...' : 'Save Settings'}
+		</Button>
+	</div>
+</div>
+
 <!-- Owner transfer -->
+<hr class="mb-8 max-w-lg border-t" />
+
+<h3 class="mb-4 text-lg font-semibold">Ownership</h3>
 {#if data.admins.length > 0}
 	<div class="mb-8 max-w-md">
 		<label class="text-sm font-medium">Transfer Ownership</label>
-		<p class="mb-2 text-xs text-muted-foreground">Transfer the project owner role to another admin.</p>
+		<p class="mb-2 text-xs text-muted-foreground">
+			Transfer the project owner role to another admin.
+		</p>
 		<div class="mt-1 flex gap-2">
 			<div class="flex-1">
-				<UserSearchSelect bind:value={transferUserId} placeholder="Search admins by name or email..." members={data.admins} />
+				<UserSearchSelect
+					bind:value={transferUserId}
+					placeholder="Search admins by name or email..."
+					members={data.admins}
+				/>
 			</div>
 			<Button
 				class="bg-purple-500 text-white hover:bg-purple-600"
@@ -102,16 +208,6 @@
 		<p class="text-sm text-muted-foreground">No other admins to transfer ownership to.</p>
 	</div>
 {/if}
-
-<div class="mb-8 max-w-md">
-	<label class="text-sm font-medium">Rename Project</label>
-	<div class="mt-1 flex gap-2">
-		<Input bind:value={name} disabled={renaming} />
-		<Button class="bg-green-500 text-white hover:bg-green-600" onclick={rename} disabled={renaming}>
-			Rename
-		</Button>
-	</div>
-</div>
 
 <div class="max-w-md">
 	<p class="mb-2 text-sm font-medium text-red-500">Danger zone</p>
@@ -136,8 +232,10 @@
 			<Button variant="outline" class="flex-1" onclick={() => (showTransferConfirm = false)}
 				>Cancel</Button
 			>
-			<Button class="flex-1 bg-purple-500 text-white hover:bg-purple-600" onclick={confirmTransfer} disabled={transferring}
-				>{transferring ? 'Transferring...' : 'Transfer'}</Button
+			<Button
+				class="flex-1 bg-purple-500 text-white hover:bg-purple-600"
+				onclick={confirmTransfer}
+				disabled={transferring}>{transferring ? 'Transferring...' : 'Transfer'}</Button
 			>
 		</Dialog.Footer>
 	</Dialog.Content>

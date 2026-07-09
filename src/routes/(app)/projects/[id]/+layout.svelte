@@ -1,7 +1,14 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto, invalidateAll } from '$app/navigation';
-	import { ChartColumn, ListTodo, KanbanSquare, MoreHorizontal, Plus } from '@lucide/svelte';
+	import {
+		ChartColumn,
+		ListTodo,
+		KanbanSquare,
+		MoreHorizontal,
+		Plus,
+		Calendar
+	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import CreateTaskModal from '$lib/components/ui/CreateTaskModal.svelte';
@@ -32,6 +39,33 @@
 		}
 	}
 
+	const statusColors: Record<string, string> = {
+		ACTIVE: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+		ON_HOLD: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
+		CANCELED: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+		COMPLETE: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+	};
+
+	const tagColors = [
+		'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+		'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+		'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+		'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300',
+		'bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-300',
+		'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300',
+		'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300',
+		'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300'
+	];
+
+	function tagColor(index: number) {
+		return tagColors[index % tagColors.length];
+	}
+
+	function isOverdue(dateStr: string | null) {
+		if (!dateStr) return false;
+		return new Date(dateStr) < new Date();
+	}
+
 	type SessionUser = {
 		id: string;
 		email: string;
@@ -46,12 +80,13 @@
 
 	const projectId = page.params.id;
 	const isOwner = $derived(
-		data.project.members?.find((m: ProjectMember) => m.user.id === Number(data.session?.user?.id))?.isOwner === true
+		data.project.members?.find((m: ProjectMember) => m.user.id === Number(data.session?.user?.id))
+			?.isOwner === true
 	);
 	const isAdmin = $derived(
-		data.project.members?.find((m: ProjectMember) => m.user.id === Number(data.session?.user?.id))?.role === 'ADMIN' || isOwner
+		data.project.members?.find((m: ProjectMember) => m.user.id === Number(data.session?.user?.id))
+			?.role === 'ADMIN' || isOwner
 	);
-
 
 	let showCreateTask = $state(false);
 
@@ -67,6 +102,27 @@
 		<div class="flex items-center justify-between">
 			<div class="flex items-center gap-2">
 				<h1 class="text-xl font-bold">{data.project.name}</h1>
+				{#if data.project.status}
+					<span
+						class="rounded-full px-2.5 py-0.5 text-xs font-medium {statusColors[
+							data.project.status
+						] ?? ''}"
+					>
+						{data.project.status === 'ON_HOLD'
+							? 'On Hold'
+							: data.project.status.charAt(0) + data.project.status.slice(1).toLowerCase()}
+					</span>
+				{/if}
+				{#if data.project.deadline}
+					<span
+						class="flex items-center gap-1 text-xs {isOverdue(data.project.deadline)
+							? 'font-medium text-red-600'
+							: 'text-muted-foreground'}"
+					>
+						<Calendar class="h-3.5 w-3.5" />
+						{new Date(data.project.deadline).toLocaleDateString()}
+					</span>
+				{/if}
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						<button class="rounded p-1 hover:bg-accent">
@@ -96,6 +152,16 @@
 				</Button>
 			{/if}
 		</div>
+
+		{#if data.project.tags && data.project.tags.length > 0}
+			<div class="mt-2 flex flex-wrap items-center gap-1.5">
+				{#each data.project.tags as tag, i (tag)}
+					<span class="rounded-full px-2 py-0.5 text-xs font-medium {tagColor(i)}">
+						{tag}
+					</span>
+				{/each}
+			</div>
+		{/if}
 
 		<div class="mt-3 flex gap-4">
 			{#each tabs as tab (tab.path)}
@@ -149,4 +215,3 @@
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
-

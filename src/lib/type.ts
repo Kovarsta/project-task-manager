@@ -1,18 +1,30 @@
 export type ProjectMember = {
-  id:      number
-  role:    'ADMIN' | 'MEMBER'
-  isOwner: boolean
-  userId:  number
-  joinedAt: string
-  user: { id: number; name: string; email: string; createdAt: string; deactivatedAt: string | null }
-  _count?: { tasks: number }
-}
+	id: number;
+	role: 'ADMIN' | 'MEMBER';
+	isOwner: boolean;
+	userId: number;
+	joinedAt: string;
+	user: {
+		id: number;
+		name: string;
+		email: string;
+		createdAt: string;
+		deactivatedAt: string | null;
+	};
+	_count?: { tasks: number };
+};
+
+export type ProjectStatus = 'ACTIVE' | 'ON_HOLD' | 'CANCELED' | 'COMPLETE';
 
 export type Project = {
 	id: number;
 	name: string;
+	status: ProjectStatus;
+	deadline: string | null;
+	tags: string[];
+	description: string | null;
 	createdById: number;
-	members?:    ProjectMember[]
+	members?: ProjectMember[];
 	createdAt: string;
 	_count: {
 		tasks: number;
@@ -24,6 +36,10 @@ export type Project = {
 export type AdminProject = {
 	id: number;
 	name: string;
+	status: ProjectStatus;
+	deadline: string | null;
+	tags: string[];
+	description: string | null;
 	createdById: number;
 	createdBy: { id: number; name: string; email: string };
 	createdAt: string;
@@ -31,16 +47,16 @@ export type AdminProject = {
 };
 
 export type Task = {
-  id:          number
-  title:       string
-  description: string | null
-  tags:        string[]
-  status:      'TODO' | 'DOING' | 'DONE'
-  priority:    'LOWEST' | 'LOW' | 'MEDIUM' | 'HIGH' | 'HIGHEST'
-  dueDate:     string | null
-  assignee:    { id: number; name: string; email: string } | null
-  createdBy:   { id: number; name: string }
-}
+	id: number;
+	title: string;
+	description: string | null;
+	tags: string[];
+	status: 'TODO' | 'DOING' | 'DONE';
+	priority: 'LOWEST' | 'LOW' | 'MEDIUM' | 'HIGH' | 'HIGHEST';
+	dueDate: string | null;
+	assignee: { id: number; name: string; email: string } | null;
+	createdBy: { id: number; name: string };
+};
 
 export type AdminUser = {
 	id: number;
@@ -53,10 +69,10 @@ export type AdminUser = {
 };
 
 export type Invite = {
-  id:           number
-  projectId:    number
-  invitedEmail: string
-  status:       'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED'
-  createdAt:    string
-  expiresAt:    string
-}
+	id: number;
+	projectId: number;
+	invitedEmail: string;
+	status: 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED';
+	createdAt: string;
+	expiresAt: string;
+};

@@ -40,14 +40,44 @@ export async function PATCH(event: RequestEvent) {
 	await requireProjectAdmin(event, projectId);
 
 	const body = await event.request.json();
-	const name = body.name?.trim();
 
-	if (!name) throw error(400, 'Project name is required');
-	if (name.length > 50) throw error(400, 'Project name must be under 50 characters');
+	const data: Record<string, unknown> = {};
+
+	if (body.name !== undefined) {
+		const name = String(body.name).trim();
+		if (!name) throw error(400, 'Project name is required');
+		if (name.length > 50) throw error(400, 'Project name must be under 50 characters');
+		data.name = name;
+	}
+
+	if (body.status !== undefined) {
+		const validStatuses = ['ACTIVE', 'ON_HOLD', 'CANCELED', 'COMPLETE'];
+		if (!validStatuses.includes(body.status)) throw error(400, 'Invalid project status');
+		data.status = body.status;
+	}
+
+	if (body.description !== undefined) {
+		data.description = String(body.description).trim() || null;
+	}
+
+	if (body.deadline !== undefined) {
+		data.deadline = body.deadline ? new Date(body.deadline) : null;
+	}
+
+	if (body.tags !== undefined) {
+		const rawTags: string[] = Array.isArray(body.tags) ? body.tags : [];
+		const tags = rawTags.map((t: string) => String(t).trim().toLowerCase()).filter(Boolean);
+		if (tags.length > 10) throw error(400, 'Maximum 10 tags allowed');
+		if (tags.some((t: string) => t.length > 30))
+			throw error(400, 'Each tag must be under 30 characters');
+		data.tags = tags;
+	}
+
+	if (Object.keys(data).length === 0) throw error(400, 'No fields to update');
 
 	const project = await prisma.project.update({
 		where: { id: projectId },
-		data: { name }
+		data
 	});
 
 	return json(project);
