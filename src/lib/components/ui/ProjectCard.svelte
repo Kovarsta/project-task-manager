@@ -12,21 +12,21 @@
 	} = $props();
 
 	const statusColors: Record<string, string> = {
-		ACTIVE: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-		ON_HOLD: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
-		CANCELED: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
-		COMPLETE: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+		ACTIVE: 'text-green-600 dark:text-green-400',
+		ON_HOLD: 'text-amber-600 dark:text-amber-400',
+		CANCELED: 'text-red-600 dark:text-red-400',
+		COMPLETE: 'text-blue-600 dark:text-blue-400'
 	};
 
 	const tagColors = [
-		'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-		'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
-		'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-		'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300',
-		'bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-300',
-		'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300',
-		'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300',
-		'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300'
+		'text-blue-600 dark:text-blue-400',
+		'text-purple-600 dark:text-purple-400',
+		'text-green-600 dark:text-green-400',
+		'text-amber-600 dark:text-amber-400',
+		'text-rose-600 dark:text-rose-400',
+		'text-cyan-600 dark:text-cyan-400',
+		'text-indigo-600 dark:text-indigo-400',
+		'text-teal-600 dark:text-teal-400'
 	];
 
 	function tagColor(index: number) {
@@ -76,7 +76,7 @@
 			<p class="truncate text-xl font-semibold">{project.name}</p>
 			{#if project.status}
 				<span
-					class="text-xxs shrink-0 rounded-full px-2 py-0.5 font-medium {statusColors[
+					class="text-xs font-semibold {statusColors[
 						project.status
 					] ?? ''}"
 				>
@@ -108,7 +108,7 @@
 
 			{#if project.tags && project.tags.length > 0}
 				{#each project.tags as tag, i (tag)}
-					<span class="text-xs rounded-full px-1 py-0.5 font-medium {tagColor(i)}">
+					<span class="text-xs font-medium {tagColor(i)}">
 						{tag}
 					</span>
 				{/each}
