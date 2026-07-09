@@ -8,5 +8,8 @@ export const load: PageServerLoad = async (event) => {
 
 	const page = Number(event.url.searchParams.get('page') ?? 1);
 	const limit = Number(event.url.searchParams.get('limit') ?? 20);
-	return await serverFetch(event, `/api/projects?page=${page}&limit=${limit}`);
+	const q = event.url.searchParams.get('q') ?? '';
+	const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+	if (q) params.set('q', q);
+	return await serverFetch(event, `/api/projects?${params}`);
 };

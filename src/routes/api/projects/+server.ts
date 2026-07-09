@@ -11,31 +11,49 @@ export async function GET(event: RequestEvent) {
 	const page = Number(event.url.searchParams.get('page') ?? 1);
 	const limit = Number(event.url.searchParams.get('limit') ?? 20);
 	const skip = (page - 1) * limit;
+	const q = event.url.searchParams.get('q') ?? '';
+
+	function searchFilter(where: Record<string, unknown>) {
+		if (!q) return where;
+		return {
+			...where,
+			OR: [
+				{ name: { contains: q, mode: 'insensitive' } },
+				{ tags: { has: q.toLowerCase() } },
+				{ description: { contains: q, mode: 'insensitive' } }
+			]
+		} as typeof where;
+	}
+
+	const myWhere = searchFilter({
+		createdById: user.id,
+		members: { some: { userId: user.id } }
+	});
+	const sharedWhere = searchFilter({
+		members: { some: { userId: user.id } },
+		NOT: { createdById: user.id }
+	});
 
 	const [myProjects, myTotal] = await Promise.all([
 		prisma.project.findMany({
-			where: { createdById: user.id, members: { some: { userId: user.id } } },
+			where: myWhere as any,
 			include: { _count: { select: { tasks: { where: { status: { not: 'DONE' } } } } } },
 			orderBy: { createdAt: 'desc' },
 			skip,
 			take: limit
 		}),
-		prisma.project.count({
-			where: { createdById: user.id, members: { some: { userId: user.id } } }
-		})
+		prisma.project.count({ where: myWhere as any })
 	]);
 
 	const [sharedProjects, sharedTotal] = await Promise.all([
 		prisma.project.findMany({
-			where: { members: { some: { userId: user.id } }, NOT: { createdById: user.id } },
+			where: sharedWhere as any,
 			include: { _count: { select: { tasks: { where: { status: { not: 'DONE' } } } } } },
 			orderBy: { createdAt: 'desc' },
 			skip,
 			take: limit
 		}),
-		prisma.project.count({
-			where: { members: { some: { userId: user.id } }, NOT: { createdById: user.id } }
-		})
+		prisma.project.count({ where: sharedWhere as any })
 	]);
 
 	// Augment each project with attention-sort data (tasks assigned to current user)
