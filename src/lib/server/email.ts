@@ -1,7 +1,7 @@
-import { MailtrapClient } from 'mailtrap';
+import { Resend } from 'resend';
 import { env } from '$env/dynamic/private';
 
-const client = new MailtrapClient({ token: env.MAILTRAP_TOKEN });
+const resend = new Resend(env.RESEND_API_KEY);
 
 export async function sendInviteEmail(to: string, projectName: string, link: string) {
 	const html = `<!DOCTYPE html>
@@ -63,12 +63,13 @@ export async function sendInviteEmail(to: string, projectName: string, link: str
 </html>`;
 
 	try {
-		await client.send({
-			from: { email: env.EMAIL_FROM_ADDRESS || 'hello@demomailtrap.co', name: 'Project Manager' },
-			to: [{ email: to }],
+		const result = await resend.emails.send({
+			from: env.EMAIL_FROM_ADDRESS || 'noreply@invite.kovarsta.com',
+			to,
 			subject: `You've been invited to ${projectName}`,
 			html
 		});
+		console.log(result);
 	} catch (err) {
 		console.error('Failed to send invite email:', err);
 		throw new Error('Failed to send invite email');
