@@ -69,7 +69,7 @@
 	<!-- Left: main content -->
 	<div class="min-w-0 flex-1">
 		<div class="flex items-center gap-2">
-			<p class="truncate text-sm font-medium">{project.name}</p>
+			<p class="truncate text-base font-semibold">{project.name}</p>
 			{#if project.status && project.status !== 'ACTIVE'}
 				<span class="shrink-0 rounded-full px-2 py-0.5 text-xxs font-medium {statusColors[project.status] ?? ''}">
 					{statusLabel(project.status)}
