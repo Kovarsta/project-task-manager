@@ -3,6 +3,7 @@ import { prisma } from '$lib/prisma';
 import { requireAuth } from '$lib/server/auth';
 import { logActivity } from '$lib/server/activity';
 import { sanitizeHtml } from '$lib/sanitize';
+import { projectSearchFilter } from '$lib/server/project-search';
 import type { RequestEvent } from '@sveltejs/kit';
 
 // GET: View all projects
@@ -16,14 +17,7 @@ export async function GET(event: RequestEvent) {
 
 	function searchFilter(where: Record<string, unknown>) {
 		if (!q) return where;
-		return {
-			...where,
-			OR: [
-				{ name: { contains: q, mode: 'insensitive' } },
-				{ tags: { has: q.toLowerCase() } },
-				{ description: { contains: q, mode: 'insensitive' } }
-			]
-		} as typeof where;
+		return { ...where, ...projectSearchFilter(q) } as typeof where;
 	}
 
 	const myWhere = searchFilter({
