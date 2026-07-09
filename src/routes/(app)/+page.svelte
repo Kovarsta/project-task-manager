@@ -10,6 +10,7 @@
 	import RichTextEditor from '$lib/components/ui/RichTextEditor.svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { Project } from '$lib/type.js';
+	import { sanitizeHtml } from '$lib/sanitize';
 	import Pagination from '$lib/components/ui/Pagination.svelte';
 
 	let { data } = $props();
@@ -136,7 +137,7 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					name: newName.trim(),
-					description: newDescription.trim() || null,
+					description: sanitizeHtml(newDescription.trim()) || null,
 					deadline: newDeadline || null,
 					tags: newTags
 				})

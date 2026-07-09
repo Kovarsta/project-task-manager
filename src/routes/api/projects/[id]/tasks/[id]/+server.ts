@@ -2,6 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireProjectAdmin, requireProjectMember } from '$lib/server/auth';
 import { logActivity } from '$lib/server/activity';
+import { sanitizeHtml } from '$lib/sanitize';
 import type { RequestEvent } from '@sveltejs/kit';
 
 async function getTask(id: number) {
@@ -43,11 +44,11 @@ export async function PATCH(event: RequestEvent) {
 	}
 
 	if (body.description !== undefined) {
-		const desc = body.description?.trim();
+		const desc = sanitizeHtml(body.description?.trim() ?? '') || null;
 		if (desc && desc.length > 2000) {
 			throw error(400, 'Description must be under 2000 characters');
 		}
-		body.description = desc ?? null;
+		body.description = desc;
 	}
 
 	if (body.tags !== undefined) {

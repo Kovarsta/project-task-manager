@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireProjectAdmin, requireProjectMember } from '$lib/server/auth';
+import { sanitizeHtml } from '$lib/sanitize';
 import type { RequestEvent } from '@sveltejs/kit';
 
 function getProjectId(event: RequestEvent) {
@@ -57,7 +58,8 @@ export async function PATCH(event: RequestEvent) {
 	}
 
 	if (body.description !== undefined) {
-		const desc = String(body.description).trim() || null;
+		const rawDesc = String(body.description).trim() || null;
+		const desc = rawDesc ? sanitizeHtml(rawDesc) : null;
 		if (desc) {
 			const charCount = desc.replace(/<[^>]*>/g, '').trim().length;
 			if (charCount > 60) throw error(400, 'Description must be under 60 characters');
