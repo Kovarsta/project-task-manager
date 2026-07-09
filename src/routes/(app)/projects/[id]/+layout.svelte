@@ -163,6 +163,12 @@
 			</div>
 		{/if}
 
+		{#if data.project.description}
+			<div class="mt-2 text-sm text-muted-foreground [&_a]:text-blue-500 [&_a]:underline">
+				{@html data.project.description}
+			</div>
+		{/if}
+
 		<div class="mt-3 flex gap-4">
 			{#each tabs as tab (tab.path)}
 				{@const Icon = tab.icon}
