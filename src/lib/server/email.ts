@@ -3,9 +3,7 @@ import { MailtrapTransport } from 'mailtrap';
 import { env } from '$env/dynamic/private';
 
 const transport = nodemailer.createTransport(
-	MailtrapTransport({
-		token: env.MAILTRAP_TOKEN!
-	})
+	new MailtrapTransport({ token: env.MAILTRAP_TOKEN! })
 );
 
 export async function sendInviteEmail(to: string, projectName: string, link: string) {
