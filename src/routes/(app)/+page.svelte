@@ -27,6 +27,12 @@
 	let newTags = $state<string[]>([]);
 	let creating = $state(false);
 
+	function stripHtml(html: string) {
+		return html.replace(/<[^>]*>/g, '').trim();
+	}
+
+	const descChars = $derived(stripHtml(newDescription).length);
+
 	let sortField = $state<'createdAt' | 'name' | 'tasks' | 'attention'>('createdAt');
 	let sortDir = $state<'asc' | 'desc'>('desc');
 
@@ -228,7 +234,9 @@
 			<div>
 				<label class="mb-1 block text-sm font-medium">Description</label>
 				<RichTextEditor bind:content={newDescription} placeholder="Describe the project..." />
-				<p class="mt-1 text-xs text-muted-foreground/60">Max 60 words</p>
+				<p class="mt-1 text-xs {descChars > 60 ? 'text-red-500' : 'text-muted-foreground/60'}">
+					{descChars}/60 characters
+				</p>
 			</div>
 
 			<div>

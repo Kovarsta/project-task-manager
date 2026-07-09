@@ -100,8 +100,8 @@ export async function POST(event: RequestEvent) {
 
 	const description = body.description?.trim() || null;
 	if (description) {
-		const wordCount = description.replace(/<[^>]*>/g, '').trim().split(/\s+/).length;
-		if (wordCount > 60) throw error(400, 'Description must be under 60 words');
+		const charCount = description.replace(/<[^>]*>/g, '').trim().length;
+		if (charCount > 60) throw error(400, 'Description must be under 60 characters');
 	}
 	const deadline = body.deadline ? new Date(body.deadline) : null;
 

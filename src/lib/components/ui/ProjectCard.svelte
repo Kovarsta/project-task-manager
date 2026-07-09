@@ -41,9 +41,8 @@
 		if (!html) return null;
 		const text = stripHtml(html);
 		if (!text) return null;
-		const words = text.split(/\s+/);
-		if (words.length <= 60) return text;
-		return words.slice(0, 60).join(' ') + '...';
+		if (text.length <= 60) return text;
+		return text.slice(0, 60) + '...';
 	}
 
 	function isOverdue(dateStr: string | null) {
@@ -78,15 +77,20 @@
 			{/if}
 		</div>
 
-		{#if preview}
-			<p class="mt-1 text-xs text-muted-foreground">{preview}</p>
-		{/if}
+		<p class="mt-1 text-xs {preview ? 'text-muted-foreground' : 'text-muted-foreground/40 italic'}">
+			{preview ?? 'No Description'}
+		</p>
 
 		<div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
 			{#if project.deadline}
 				<span class="flex items-center gap-1 text-xs {isOverdue(project.deadline) ? 'font-medium text-red-600' : 'text-muted-foreground'}">
 					<Calendar class="h-3 w-3" />
 					{new Date(project.deadline).toLocaleDateString()}
+				</span>
+			{:else}
+				<span class="flex items-center gap-1 text-xs text-muted-foreground/40 italic">
+					<Calendar class="h-3 w-3" />
+					No Deadline
 				</span>
 			{/if}
 
@@ -99,6 +103,8 @@
 				{#if project.tags.length > 3}
 					<span class="text-xxs text-muted-foreground">+{project.tags.length - 3}</span>
 				{/if}
+			{:else}
+				<span class="text-xs text-muted-foreground/40 italic">No tags</span>
 			{/if}
 		</div>
 	</div>
