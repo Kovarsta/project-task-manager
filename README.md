@@ -22,12 +22,15 @@ Built as an internship project for Van Lang University.
 ## Features
 
 - **Multi-project management** - create and manage multiple projects simultaneously
+- **Project lifecycle** - projects can be active, on hold, canceled, or complete; admins can deactivate (soft delete) projects; super admins can reactivate them
+- **Rich text descriptions** - TipTap editor with HTML rendering and server-side sanitization
 - **Role-based access control** - Super Admin, Project Admin, and Member roles with distinct permissions
 - **Kanban board** - drag and drop tasks across Todo / Doing / Done columns
 - **Task management** - create, edit, assign, prioritize, and track tasks with due dates
 - **Invite system** - invite members via shareable link with email notification, 7-day expiry, and domain restriction
 - **Weekly statistics** - Chart.js donut chart showing tasks created vs completed in the last 7 days
-- **Super Admin panel** - system wide project and user management
+- **Tags and deadlines** - tag projects and tasks with color-coded labels, set deadlines with fuzzy date-aware search
+- **Super Admin panel** - system-wide project and user management with deactivation controls
 - **Microsoft SSO ready** - swap provider via environment variables, zero code changes required
 
 ---
@@ -156,7 +159,8 @@ Subsequent Super Admins can be promoted via the Admin panel UI.
 src/
   lib/
     components/ui/    # Shared UI components (modals, cards, pagination)
-    server/           # Server only utilities (auth helpers, email, API fetch)
+    server/           # Server-only utilities (auth helpers, email, API fetch, project search)
+    sanitize.ts       # HTML sanitizer for rich text descriptions
     prisma.ts         # Prisma client singleton
     types.ts          # Shared TypeScript types
   routes/
@@ -170,10 +174,9 @@ src/
       invite/[token]/ # Invite accept page
     api/              # REST API endpoints
       projects/
-      invites/
-      tasks/
-      admin/
-      users/
+      invites/       # Invite creation and acceptance
+      admin/         # Super admin endpoints
+      users/         # User search
   prisma/
     schema.prisma     # Database schema
 ```
@@ -183,4 +186,9 @@ src/
 ## Known Limitations
 
 - Email delivery in sandbox mode is restricted to the Resend account owner's email until a domain is verified
-- Search on paginated list views filters within the current page only, does not search across all pages
+
+---
+
+## API Reference
+
+See [`src/routes/api/README.md`](src/routes/api/README.md) for a complete list of all REST endpoints.
