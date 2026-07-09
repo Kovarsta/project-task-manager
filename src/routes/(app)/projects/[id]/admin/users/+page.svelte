@@ -40,7 +40,9 @@
 	);
 
 	const totalMembers = $derived(data.members.length);
-	const adminCount = $derived(data.members.filter((m: ProjectMember) => m.role === 'ADMIN' || m.isOwner).length);
+	const adminCount = $derived(
+		data.members.filter((m: ProjectMember) => m.role === 'ADMIN' || m.isOwner).length
+	);
 
 	async function sendInvite(e: Event) {
 		e.preventDefault();
@@ -134,7 +136,6 @@
 		toast.success('Invite revoked');
 		invalidateAll();
 	}
-
 </script>
 
 <div class="mb-4 flex items-center justify-between">
@@ -186,16 +187,26 @@
 						<div class="flex items-center gap-2">
 							<span class="font-medium">{member.user.name}</span>
 							{#if member.isOwner}
-								<span class="rounded bg-purple-100 px-1.5 py-0.5 text-xs text-purple-700 dark:bg-purple-900 dark:text-purple-300">Owner</span>
+								<span
+									class="rounded bg-purple-100 px-1.5 py-0.5 text-xs text-purple-700 dark:bg-purple-900 dark:text-purple-300"
+									>Owner</span
+								>
 							{:else if member.role === 'ADMIN'}
-								<span class="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700 dark:bg-amber-900 dark:text-amber-300">Admin</span>
+								<span
+									class="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+									>Admin</span
+								>
 							{/if}
 						</div>
 						<div class="text-xs text-muted-foreground">{member.user.email}</div>
 						<div class="mt-1.5 space-y-0.5 text-xs text-muted-foreground">
 							<div class="flex items-center gap-1">
 								<Calendar class="h-3 w-3" />
-								Joined {new Date(member.joinedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+								Joined {new Date(member.joinedAt).toLocaleDateString('en-US', {
+									month: 'short',
+									day: 'numeric',
+									year: 'numeric'
+								})}
 							</div>
 							<div class="flex items-center gap-1">
 								<ListTodo class="h-3 w-3" />
@@ -243,7 +254,10 @@
 					<td class="px-4 py-3">
 						<p class="font-medium">{invite.invitedEmail}</p>
 						<p class="mt-1 text-xs text-muted-foreground">
-							<span class="rounded bg-yellow-100 px-1.5 py-0.5 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">Pending</span>
+							<span
+								class="rounded bg-yellow-100 px-1.5 py-0.5 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+								>Pending</span
+							>
 						</p>
 					</td>
 					<td class="px-4 py-3">
@@ -286,7 +300,10 @@
 		<Dialog.Header>
 			<Dialog.Title>Change member role</Dialog.Title>
 			<Dialog.Description>
-				{confirmRole?.member.user.name} will be {confirmRole?.newRole === 'ADMIN' ? 'promoted to' : 'demoted to'} {confirmRole?.newRole === 'ADMIN' ? 'Admin' : 'Member'}.
+				{confirmRole?.member.user.name} will be {confirmRole?.newRole === 'ADMIN'
+					? 'promoted to'
+					: 'demoted to'}
+				{confirmRole?.newRole === 'ADMIN' ? 'Admin' : 'Member'}.
 			</Dialog.Description>
 		</Dialog.Header>
 		<div class="space-y-2 py-2">

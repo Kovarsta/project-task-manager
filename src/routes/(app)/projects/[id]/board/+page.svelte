@@ -88,7 +88,10 @@
 	}
 	function getDescriptionPreview(desc: string | null): string {
 		if (!desc) return '';
-		const plainText = desc.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+		const plainText = desc
+			.replace(/<[^>]*>/g, ' ')
+			.replace(/\s+/g, ' ')
+			.trim();
 		const words = plainText.split(' ').filter(Boolean);
 		if (words.length > 5) {
 			return words.slice(0, 5).join(' ') + '...';
@@ -140,7 +143,9 @@
 					>
 						<p class="text-sm font-medium">{task.title}</p>
 						{#if task.description}
-							<p class="mt-1 text-xs text-muted-foreground">{getDescriptionPreview(task.description)}</p>
+							<p class="mt-1 text-xs text-muted-foreground">
+								{getDescriptionPreview(task.description)}
+							</p>
 						{/if}
 						<div class="mt-2 flex items-center justify-between">
 							<span class="text-xs font-medium {priorityColors[task.priority]}">

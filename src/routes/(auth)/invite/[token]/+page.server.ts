@@ -31,4 +31,3 @@ export const load: PageServerLoad = async (event) => {
 
 	return { ...data, error: null };
 };
-

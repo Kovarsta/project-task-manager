@@ -152,13 +152,13 @@
 	<div class="flex-1 overflow-y-auto">
 		<div class="mb-4 flex flex-wrap items-center gap-3">
 			<div class="relative max-w-sm flex-1">
-				<Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 				<input
 					type="text"
 					placeholder="Search users..."
 					value={search}
 					oninput={(e) => onSearchInput(e.currentTarget.value)}
-					class="w-full rounded-lg border border-input bg-background py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+					class="w-full rounded-lg border border-input bg-background py-2 pr-4 pl-10 text-sm placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none"
 				/>
 			</div>
 			{#if data.q}
@@ -170,7 +170,7 @@
 					<Button
 						variant={sortField === field ? 'secondary' : 'ghost'}
 						size="sm"
-						class="gap-1 text-xs h-8"
+						class="h-8 gap-1 text-xs"
 						onclick={() => handleSortClick(field as typeof sortField)}
 					>
 						{label}
@@ -196,12 +196,19 @@
 				</thead>
 				<tbody>
 					{#each sorted as user (user.id)}
-						<tr class="border-t transition-colors hover:bg-muted/20 {user.deactivatedAt ? 'opacity-50' : ''}">
+						<tr
+							class="border-t transition-colors hover:bg-muted/20 {user.deactivatedAt
+								? 'opacity-50'
+								: ''}"
+						>
 							<td class="px-4 py-3">
 								<div class="flex items-center gap-2">
 									<span class="font-medium">{user.name}</span>
 									{#if user.isSuperAdmin}
-										<Badge variant="default" class="gap-1 bg-amber-500 text-white text-xs px-1.5 py-0 h-5">
+										<Badge
+											variant="default"
+											class="h-5 gap-1 bg-amber-500 px-1.5 py-0 text-xs text-white"
+										>
 											<Shield class="h-3 w-3" />
 											Super Admin
 										</Badge>
@@ -215,7 +222,8 @@
 										<span class="text-muted-foreground">Active</span>
 									{/if}
 									<span class="text-muted-foreground">
-										&middot; {user._count.createdProjects} projects &middot; {user._count.memberships} memberships &middot; Joined {shortDate(user.createdAt)}
+										&middot; {user._count.createdProjects} projects &middot; {user._count
+											.memberships} memberships &middot; Joined {shortDate(user.createdAt)}
 									</span>
 								</div>
 							</td>
@@ -297,7 +305,9 @@
 						<span>{confirmAction.user._count.createdTasks} tasks</span>
 					</div>
 				</div>
-				<p class="text-sm text-muted-foreground">Are you sure you want to change this user's role?</p>
+				<p class="text-sm text-muted-foreground">
+					Are you sure you want to change this user's role?
+				</p>
 			</div>
 			<Dialog.Footer class="gap-2">
 				<Button

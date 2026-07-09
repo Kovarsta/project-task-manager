@@ -30,7 +30,13 @@
 
 	let editorEl: HTMLDivElement | null = null;
 	let editor: Editor | null = null;
-	let editorState = $state({ bold: false, italic: false, underline: false, link: false, h2: false });
+	let editorState = $state({
+		bold: false,
+		italic: false,
+		underline: false,
+		link: false,
+		h2: false
+	});
 
 	function updateState() {
 		if (!editor) return;
@@ -84,7 +90,11 @@
 
 	// Sync external content changes (e.g., when a different task opens)
 	$effect(() => {
-		if (editor && content !== editor.getHTML() && content !== (editor.getHTML() === '<p></p>' ? '' : editor.getHTML())) {
+		if (
+			editor &&
+			content !== editor.getHTML() &&
+			content !== (editor.getHTML() === '<p></p>' ? '' : editor.getHTML())
+		) {
 			editor.commands.setContent(content || '', { emitUpdate: false });
 		}
 	});
@@ -159,9 +169,7 @@
 
 <div class="rounded-md border border-input {className}">
 	<!-- Toolbar -->
-	<div
-		class="flex flex-wrap items-center gap-0.5 border-b border-input bg-muted/30 px-2 py-1"
-	>
+	<div class="flex flex-wrap items-center gap-0.5 border-b border-input bg-muted/30 px-2 py-1">
 		{#each buttons as btn (btn.label)}
 			{@const Icon = btn.icon}
 			<button

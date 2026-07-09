@@ -17,7 +17,6 @@ Built as an internship project for Van Lang University.
 | Auth     | Auth.js (GitHub OAuth for dev, Microsoft Entra ID for production) |
 | Email    | Resend                                                            |
 
-
 ---
 
 ## Features
@@ -178,7 +177,6 @@ src/
   prisma/
     schema.prisma     # Database schema
 ```
-
 
 ---
 

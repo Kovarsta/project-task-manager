@@ -158,7 +158,9 @@
 					placeholder="Describe the task..."
 				/>
 				{#if errors.description}
-					<p class="mt-1 text-xs text-red-500">Description plain text must be under 2000 characters</p>
+					<p class="mt-1 text-xs text-red-500">
+						Description plain text must be under 2000 characters
+					</p>
 				{/if}
 			</div>
 

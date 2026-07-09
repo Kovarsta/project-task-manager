@@ -29,4 +29,3 @@ export async function GET(event: RequestEvent) {
 
 	return json(result);
 }
-

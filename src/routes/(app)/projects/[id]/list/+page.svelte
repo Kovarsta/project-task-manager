@@ -98,7 +98,10 @@
 
 	function getDescriptionPreview(desc: string | null): string {
 		if (!desc) return '';
-		const plainText = desc.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+		const plainText = desc
+			.replace(/<[^>]*>/g, ' ')
+			.replace(/\s+/g, ' ')
+			.trim();
 		if (plainText.length > 10) {
 			return plainText.slice(0, 10) + '...';
 		}
@@ -147,9 +150,9 @@
 				<tbody>
 					{#each filtered as task (task.id)}
 						<tr class="cursor-pointer border-t hover:bg-accent/50" onclick={() => openTask(task)}>
-							<td class="px-4 py-2 max-w-[220px] truncate">
+							<td class="max-w-[220px] truncate px-4 py-2">
 								<div class="truncate">
-									<p class="font-medium truncate">{task.title}</p>
+									<p class="truncate font-medium">{task.title}</p>
 									{#if task.description}
 										<!-- Render HTML description as a truncated plain-text preview -->
 										<p class="mt-0.5 truncate text-xs text-muted-foreground">
@@ -171,7 +174,9 @@
 									<div class="flex flex-wrap gap-1">
 										{#each task.tags as tag, i (tag)}
 											<span
-												class="inline-block rounded-full px-2 py-0.5 text-xs font-medium {tagColor(i)}"
+												class="inline-block rounded-full px-2 py-0.5 text-xs font-medium {tagColor(
+													i
+												)}"
 											>
 												{tag}
 											</span>

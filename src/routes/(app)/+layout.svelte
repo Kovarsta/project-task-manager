@@ -96,31 +96,31 @@
 				</button>
 
 				<DropdownMenu.Root>
-				<DropdownMenu.Trigger>
-					<button class="flex items-center gap-2 rounded p-1 hover:bg-accent">
-						{#if data.session?.user?.image}
-							<img src={data.session.user.image} alt="avatar" class="h-7 w-7 rounded-full" />
-						{:else}
-							<div
-								class="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-medium"
-							>
-								{data.session?.user?.name?.[0]?.toUpperCase() ?? '?'}
-							</div>
-						{/if}
-					</button>
-				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="end" class="w-56">
-					<div class="border-b px-3 py-2">
-						<p class="truncate text-sm font-medium">{data.session?.user?.name}</p>
-						<p class="truncate text-xs text-muted-foreground">{data.session?.user?.email}</p>
-					</div>
-					<DropdownMenu.Item
-						class="mt-1 cursor-pointer text-red-500"
-						onclick={() => signOut({ redirectTo: '/login' })}
-					>
-						Đăng xuất
-					</DropdownMenu.Item>
-				</DropdownMenu.Content>
+					<DropdownMenu.Trigger>
+						<button class="flex items-center gap-2 rounded p-1 hover:bg-accent">
+							{#if data.session?.user?.image}
+								<img src={data.session.user.image} alt="avatar" class="h-7 w-7 rounded-full" />
+							{:else}
+								<div
+									class="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-medium"
+								>
+									{data.session?.user?.name?.[0]?.toUpperCase() ?? '?'}
+								</div>
+							{/if}
+						</button>
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end" class="w-56">
+						<div class="border-b px-3 py-2">
+							<p class="truncate text-sm font-medium">{data.session?.user?.name}</p>
+							<p class="truncate text-xs text-muted-foreground">{data.session?.user?.email}</p>
+						</div>
+						<DropdownMenu.Item
+							class="mt-1 cursor-pointer text-red-500"
+							onclick={() => signOut({ redirectTo: '/login' })}
+						>
+							Đăng xuất
+						</DropdownMenu.Item>
+					</DropdownMenu.Content>
 				</DropdownMenu.Root>
 			</div>
 		</header>

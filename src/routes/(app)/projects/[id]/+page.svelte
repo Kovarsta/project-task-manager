@@ -35,7 +35,9 @@
 	let canvasEl = $state<HTMLCanvasElement | null>(null);
 	let chartInstance: Chart | null = null;
 
-	const hasChartData = $derived(data.summary.todo > 0 || data.summary.doing > 0 || data.summary.done > 0);
+	const hasChartData = $derived(
+		data.summary.todo > 0 || data.summary.doing > 0 || data.summary.done > 0
+	);
 	const projectId = $derived(page.params.id);
 
 	onMount(() => {
@@ -126,41 +128,49 @@
 		<!-- Total Tasks -->
 		<div class="rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40">
 			<div class="flex items-center justify-between">
-				<span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Tasks</span>
+				<span class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+					>Total Tasks</span
+				>
 				<ListTodo class="h-4 w-4 text-muted-foreground" />
 			</div>
 			<p class="mt-2 text-3xl font-extrabold text-foreground">{data.summary.total}</p>
-			<p class="mt-1 text-xxs text-muted-foreground/80">{data.summary.members} members</p>
+			<p class="text-xxs mt-1 text-muted-foreground/80">{data.summary.members} members</p>
 		</div>
 
 		<!-- In Progress -->
 		<div class="rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40">
 			<div class="flex items-center justify-between">
-				<span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">In Progress</span>
+				<span class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+					>In Progress</span
+				>
 				<Clock class="h-4 w-4 text-muted-foreground" />
 			</div>
 			<p class="mt-2 text-3xl font-extrabold text-foreground">{data.summary.doing}</p>
-			<p class="mt-1 text-xxs text-muted-foreground/80">Active tasks</p>
+			<p class="text-xxs mt-1 text-muted-foreground/80">Active tasks</p>
 		</div>
 
 		<!-- Completed (7d) -->
 		<div class="rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40">
 			<div class="flex items-center justify-between">
-				<span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Completed</span>
+				<span class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+					>Completed</span
+				>
 				<CheckCircle2 class="h-4 w-4 text-muted-foreground" />
 			</div>
 			<p class="mt-2 text-3xl font-extrabold text-foreground">{data.summary.completed7d}</p>
-			<p class="mt-1 text-xxs text-muted-foreground/80">In the last 7 days</p>
+			<p class="text-xxs mt-1 text-muted-foreground/80">In the last 7 days</p>
 		</div>
 
 		<!-- Overdue -->
 		<div class="rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40">
 			<div class="flex items-center justify-between">
-				<span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Overdue</span>
+				<span class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+					>Overdue</span
+				>
 				<AlertTriangle class="h-4 w-4 text-muted-foreground" />
 			</div>
 			<p class="mt-2 text-3xl font-extrabold text-foreground">{data.summary.overdue}</p>
-			<p class="mt-1 text-xxs text-muted-foreground/80">Missed deadlines</p>
+			<p class="text-xxs mt-1 text-muted-foreground/80">Missed deadlines</p>
 		</div>
 	</div>
 
@@ -173,7 +183,10 @@
 					<h3 class="font-bold text-foreground">Urgent Tasks</h3>
 					<p class="text-xs text-muted-foreground">Highest priority or earliest deadlines first</p>
 				</div>
-				<a href="/projects/{projectId}/list" class="flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline">
+				<a
+					href="/projects/{projectId}/list"
+					class="flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline"
+				>
 					View all list <ArrowRight class="h-3.5 w-3.5" />
 				</a>
 			</div>
@@ -185,11 +198,19 @@
 							<div class="min-w-0 flex-1 pr-4">
 								<p class="truncate text-sm font-semibold text-foreground">{task.title}</p>
 								<div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-									<span class="rounded-full px-2 py-0.5 text-xxs font-medium {priorityColors[task.priority]}">
+									<span
+										class="text-xxs rounded-full px-2 py-0.5 font-medium {priorityColors[
+											task.priority
+										]}"
+									>
 										{task.priority}
 									</span>
 									{#if task.dueDate}
-										<span class="flex items-center gap-0.5 {isOverdue(task.dueDate) ? 'font-medium text-red-600' : ''}">
+										<span
+											class="flex items-center gap-0.5 {isOverdue(task.dueDate)
+												? 'font-medium text-red-600'
+												: ''}"
+										>
 											Due {new Date(task.dueDate).toLocaleDateString()}
 										</span>
 									{/if}
@@ -198,7 +219,9 @@
 									{/if}
 								</div>
 							</div>
-							<span class="rounded-md border px-2 py-1 text-xxs font-semibold uppercase bg-muted/50 tracking-wider">
+							<span
+								class="text-xxs rounded-md border bg-muted/50 px-2 py-1 font-semibold tracking-wider uppercase"
+							>
 								{task.status}
 							</span>
 						</div>
@@ -219,7 +242,9 @@
 				{#if hasChartData}
 					<canvas bind:this={canvasEl}></canvas>
 				{:else}
-					<div class="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+					<div
+						class="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground"
+					>
 						No tasks yet
 					</div>
 				{/if}
@@ -237,14 +262,14 @@
 					<div class="flex items-center gap-3 rounded-lg border bg-muted/20 px-3 py-2 text-sm">
 						<span class="shrink-0 font-medium text-foreground">{log.user.name}</span>
 						<span class="text-muted-foreground">{describeActivity(log)}</span>
-						<span class="ml-auto shrink-0 text-xs text-muted-foreground/60">{timeAgo(log.createdAt)}</span>
+						<span class="ml-auto shrink-0 text-xs text-muted-foreground/60"
+							>{timeAgo(log.createdAt)}</span
+						>
 					</div>
 				{/each}
 			</div>
 		{:else}
-			<div class="py-6 text-center text-sm text-muted-foreground">
-				No activity yet
-			</div>
+			<div class="py-6 text-center text-sm text-muted-foreground">No activity yet</div>
 		{/if}
 	</div>
 </div>
