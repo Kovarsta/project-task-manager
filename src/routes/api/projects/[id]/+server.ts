@@ -57,7 +57,12 @@ export async function PATCH(event: RequestEvent) {
 	}
 
 	if (body.description !== undefined) {
-		data.description = String(body.description).trim() || null;
+		const desc = String(body.description).trim() || null;
+		if (desc) {
+			const wordCount = desc.replace(/<[^>]*>/g, '').trim().split(/\s+/).length;
+			if (wordCount > 60) throw error(400, 'Description must be under 60 words');
+		}
+		data.description = desc;
 	}
 
 	if (body.deadline !== undefined) {

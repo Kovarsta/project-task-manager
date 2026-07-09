@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Calendar, ListTodo } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import type { Project } from '$lib/type';
 
@@ -31,57 +32,92 @@
 	function tagColor(index: number) {
 		return tagColors[index % tagColors.length];
 	}
+
+	function stripHtml(html: string) {
+		return html.replace(/<[^>]*>/g, '').trim();
+	}
+
+	function descriptionPreview(html: string | null) {
+		if (!html) return null;
+		const text = stripHtml(html);
+		if (!text) return null;
+		const words = text.split(/\s+/);
+		if (words.length <= 60) return text;
+		return words.slice(0, 60).join(' ') + '...';
+	}
+
+	function isOverdue(dateStr: string | null) {
+		if (!dateStr) return false;
+		return new Date(dateStr) < new Date();
+	}
+
+	function statusLabel(status: string) {
+		switch (status) {
+			case 'ON_HOLD': return 'Hold';
+			case 'COMPLETE': return 'Done';
+			case 'CANCELED': return 'Canceled';
+			default: return status;
+		}
+	}
+
+	const preview = $derived(descriptionPreview(project.description));
 </script>
 
 <button
 	onclick={() => goto(`/projects/${project.id}`)}
-	class="w-full rounded-xl border p-4 text-left transition-colors hover:bg-accent"
+	class="flex w-full items-start gap-4 rounded-xl border p-4 text-left transition-colors hover:bg-accent"
 >
-	<div class="flex items-center gap-2">
-		<p class="truncate text-sm font-medium">{project.name}</p>
-		{#if project.status && project.status !== 'ACTIVE'}
-			<span
-				class="text-xxs shrink-0 rounded-full px-2 py-0.5 font-medium {statusColors[
-					project.status
-				] ?? ''}"
-			>
-				{project.status === 'ON_HOLD'
-					? 'Hold'
-					: project.status === 'COMPLETE'
-						? 'Done'
-						: project.status}
-			</span>
+	<!-- Left: main content -->
+	<div class="min-w-0 flex-1">
+		<div class="flex items-center gap-2">
+			<p class="truncate text-sm font-medium">{project.name}</p>
+			{#if project.status && project.status !== 'ACTIVE'}
+				<span class="shrink-0 rounded-full px-2 py-0.5 text-xxs font-medium {statusColors[project.status] ?? ''}">
+					{statusLabel(project.status)}
+				</span>
+			{/if}
+		</div>
+
+		{#if preview}
+			<p class="mt-1 text-xs text-muted-foreground">{preview}</p>
+		{/if}
+
+		<div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+			{#if project.deadline}
+				<span class="flex items-center gap-1 text-xs {isOverdue(project.deadline) ? 'font-medium text-red-600' : 'text-muted-foreground'}">
+					<Calendar class="h-3 w-3" />
+					{new Date(project.deadline).toLocaleDateString()}
+				</span>
+			{/if}
+
+			{#if project.tags && project.tags.length > 0}
+				{#each project.tags.slice(0, 3) as tag, i (tag)}
+					<span class="rounded-full px-1.5 py-0.5 text-xxs font-medium {tagColor(i)}">
+						{tag}
+					</span>
+				{/each}
+				{#if project.tags.length > 3}
+					<span class="text-xxs text-muted-foreground">+{project.tags.length - 3}</span>
+				{/if}
+			{/if}
+		</div>
+	</div>
+
+	<!-- Right: task meta -->
+	<div class="shrink-0 text-right">
+		<p class="text-xs text-muted-foreground">
+			<ListTodo class="mr-0.5 inline h-3 w-3" />
+			{project._count.tasks} tasks
+		</p>
+		{#if (project._myTaskCount ?? 0) > 0}
+			<p class="mt-1 text-xs font-medium text-orange-600">
+				{project._myTaskCount} assigned
+			</p>
+			{#if project._earliestDue}
+				<p class="text-xxs text-muted-foreground">
+					due {new Date(project._earliestDue).toLocaleDateString()}
+				</p>
+			{/if}
 		{/if}
 	</div>
-	<p class="mt-1 text-xs text-muted-foreground">
-		Task left: {project._count.tasks}
-	</p>
-	{#if project.tags && project.tags.length > 0}
-		<div class="mt-1.5 flex flex-wrap items-center gap-1">
-			{#each project.tags.slice(0, 3) as tag, i (tag)}
-				<span class="text-xxs rounded-full px-1.5 py-0.5 font-medium {tagColor(i)}">
-					{tag}
-				</span>
-			{/each}
-			{#if project.tags.length > 3}
-				<span class="text-xxs text-muted-foreground">+{project.tags.length - 3}</span>
-			{/if}
-		</div>
-	{/if}
-	{#if (project._myTaskCount ?? 0) > 0}
-		<div class="mt-2 flex h-5 items-center gap-1">
-			<span class="text-xs font-medium text-orange-600">
-				{project._myTaskCount} assigned to you
-			</span>
-			{#if project._earliestDue}
-				<span class="text-xs text-muted-foreground">
-					· due {new Date(project._earliestDue).toLocaleDateString()}
-				</span>
-			{/if}
-		</div>
-	{:else}
-		<div class="mt-2 flex h-5 items-center">
-			<span class="text-xs text-muted-foreground/40"> No tasks assigned </span>
-		</div>
-	{/if}
 </button>
