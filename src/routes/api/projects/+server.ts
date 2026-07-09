@@ -99,6 +99,10 @@ export async function POST(event: RequestEvent) {
 	if (name.length > 50) throw error(400, 'Project name must be under 50 characters');
 
 	const description = body.description?.trim() || null;
+	if (description) {
+		const wordCount = description.replace(/<[^>]*>/g, '').trim().split(/\s+/).length;
+		if (wordCount > 60) throw error(400, 'Description must be under 60 words');
+	}
 	const deadline = body.deadline ? new Date(body.deadline) : null;
 
 	const rawTags: string[] = Array.isArray(body.tags) ? body.tags : [];

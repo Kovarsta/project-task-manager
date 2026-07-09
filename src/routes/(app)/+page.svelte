@@ -172,7 +172,7 @@
 				{#if filteredMy.length === 0}
 					<p class="text-sm text-muted-foreground">No projects found</p>
 				{:else}
-					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+					<div class="flex flex-col gap-2">
 						{#each filteredMy as project (project.id)}
 							<ProjectCard {project} />
 						{/each}
@@ -185,7 +185,7 @@
 				{#if filteredShared.length === 0}
 					<p class="text-sm text-muted-foreground">No shared projects</p>
 				{:else}
-					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+					<div class="flex flex-col gap-2">
 						{#each filteredShared as project (project.id)}
 							<ProjectCard {project} />
 						{/each}
@@ -228,6 +228,7 @@
 			<div>
 				<label class="mb-1 block text-sm font-medium">Description</label>
 				<RichTextEditor bind:content={newDescription} placeholder="Describe the project..." />
+				<p class="mt-1 text-xs text-muted-foreground/60">Max 60 words</p>
 			</div>
 
 			<div>

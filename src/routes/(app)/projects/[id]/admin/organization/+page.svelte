@@ -144,6 +144,7 @@
 		<div class="mt-1">
 			<RichTextEditor bind:content={description} placeholder="Describe the project..." />
 		</div>
+		<p class="mt-1 text-xs text-muted-foreground/60">Max 60 words</p>
 	</div>
 
 	<!-- Deadline -->
