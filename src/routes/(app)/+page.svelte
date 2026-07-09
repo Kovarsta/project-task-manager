@@ -47,7 +47,14 @@
 
 	const descChars = $derived(stripHtml(newDescription).length);
 
-	let sortField = $state<'createdAt' | 'name' | 'tasks' | 'attention'>('createdAt');
+	const STATUS_ORDER: Record<string, number> = {
+		ACTIVE: 0,
+		ON_HOLD: 1,
+		CANCELED: 2,
+		COMPLETE: 3
+	};
+
+	let sortField = $state<'createdAt' | 'name' | 'tasks' | 'attention' | 'status'>('createdAt');
 	let sortDir = $state<'asc' | 'desc'>('desc');
 
 	function handleSortClick(field: typeof sortField) {
@@ -62,7 +69,17 @@
 	const activeTab = $derived(page.url.searchParams.get('tab') === 'shared' ? 'shared' : 'my');
 
 	function sortProjects(projects: Project[]) {
-		return [...projects].sort((a, b) => {
+		const q = search.toLowerCase();
+		return [...projects]
+			.filter((p) => {
+				if (!q) return true;
+				return (
+					p.name.toLowerCase().includes(q) ||
+					p.tags?.some((tag) => tag.toLowerCase().includes(q)) ||
+					stripHtml(p.description ?? '').toLowerCase().includes(q)
+				);
+			})
+			.sort((a, b) => {
 				let cmp = 0;
 				if (sortField === 'name') {
 					cmp = a.name.localeCompare(b.name);
@@ -78,6 +95,8 @@
 						const bDue = b._earliestDue ? new Date(b._earliestDue).getTime() : Infinity;
 						cmp = bDue - aDue;
 					}
+				} else if (sortField === 'status') {
+					cmp = (STATUS_ORDER[a.status ?? 'ACTIVE'] ?? 0) - (STATUS_ORDER[b.status ?? 'ACTIVE'] ?? 0);
 				} else {
 					cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
 				}
@@ -163,7 +182,7 @@
 		<div class="mb-6 flex items-center gap-3">
 			<div class="flex items-center gap-1">
 				<span class="mr-1 text-xs text-muted-foreground">Sort by:</span>
-				{#each [['createdAt', 'Date'], ['name', 'Name'], ['tasks', 'Tasks'], ['attention', 'Attention']] as [field, label] (field)}
+				{#each [['createdAt', 'Date'], ['name', 'Name'], ['status', 'Status'], ['tasks', 'Tasks'], ['attention', 'Attention']] as [field, label] (field)}
 					<Button
 						variant={sortField === field ? 'secondary' : 'ghost'}
 						size="sm"
