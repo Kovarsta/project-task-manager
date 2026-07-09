@@ -28,11 +28,13 @@ export async function GET(event: RequestEvent) {
 
 	const myWhere = searchFilter({
 		createdById: user.id,
-		members: { some: { userId: user.id } }
+		members: { some: { userId: user.id } },
+		deactivatedAt: null
 	});
 	const sharedWhere = searchFilter({
 		members: { some: { userId: user.id } },
-		NOT: { createdById: user.id }
+		NOT: { createdById: user.id },
+		deactivatedAt: null
 	});
 
 	const [myProjects, myTotal] = await Promise.all([

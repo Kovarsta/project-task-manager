@@ -40,6 +40,7 @@ export type AdminProject = {
 	deadline: string | null;
 	tags: string[];
 	description: string | null;
+	deactivatedAt: string | null;
 	createdById: number;
 	createdBy: { id: number; name: string; email: string };
 	createdAt: string;

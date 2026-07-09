@@ -14,7 +14,13 @@ export async function GET(event: RequestEvent) {
 	const skip = (page - 1) * limit;
 
 	const where = {
-		...(q && { name: { contains: q, mode: 'insensitive' as const } })
+		...(q && {
+			OR: [
+				{ name: { contains: q, mode: 'insensitive' as const } },
+				{ tags: { has: q.toLowerCase() } },
+				{ description: { contains: q, mode: 'insensitive' as const } }
+			]
+		})
 	};
 
 	const [projects, total] = await Promise.all([

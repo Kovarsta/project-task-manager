@@ -21,8 +21,17 @@ export async function requireSuperAdmin(event: RequestEvent) {
 	return user;
 }
 
+async function assertProjectActive(projectId: number) {
+	const project = await prisma.project.findUnique({
+		where: { id: projectId },
+		select: { deactivatedAt: true }
+	});
+	if (project?.deactivatedAt) throw error(404, 'Project not found');
+}
+
 export async function requireProjectAdmin(event: RequestEvent, projectId: number) {
 	const user = await requireAuth(event);
+	await assertProjectActive(projectId);
 
 	const member = await prisma.projectMember.findUnique({
 		where: {
@@ -57,6 +66,7 @@ export async function requireProjectOwner(event: RequestEvent, projectId: number
 
 export async function requireProjectMember(event: RequestEvent, projectId: number) {
 	const user = await requireAuth(event);
+	await assertProjectActive(projectId);
 
 	const member = await prisma.projectMember.findUnique({
 		where: {
