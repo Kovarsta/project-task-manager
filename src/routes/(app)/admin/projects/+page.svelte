@@ -58,7 +58,7 @@
 			} else if (sortField === 'members') {
 				cmp = a._count.members - b._count.members;
 			} else if (sortField === 'status') {
-				cmp = (a.deactivatedAt ? 1 : 0) - (b.deactivatedAt ? 1 : 0);
+				cmp = (a.status ?? '').localeCompare(b.status ?? '');
 			} else if (sortField === 'created') {
 				cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
 			}
@@ -235,8 +235,8 @@
 								{/if}
 							</td>
 							<td class="px-4 py-3">
-								<span class="text-xs font-semibold {project.deactivatedAt ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
-									{project.deactivatedAt ? 'Deactivated' : 'Active'}
+								<span class="text-xs font-semibold text-muted-foreground">
+									{project.status}
 								</span>
 							</td>
 							<td class="px-4 py-3">
@@ -308,7 +308,7 @@
 						</div>
 						<div>
 							<div class="text-xs text-muted-foreground">Status</div>
-							<div class="font-medium">{confirmAction.project.deactivatedAt ? 'Deactivated' : 'Active'}</div>
+							<div class="font-medium">{confirmAction.project.status}</div>
 						</div>
 						<div>
 							<div class="text-xs text-muted-foreground">Tasks</div>
