@@ -52,10 +52,14 @@
 
 	function statusLabel(status: string) {
 		switch (status) {
-			case 'ON_HOLD': return 'Hold';
-			case 'COMPLETE': return 'Done';
-			case 'CANCELED': return 'Canceled';
-			default: return status;
+			case 'ON_HOLD':
+				return 'Hold';
+			case 'COMPLETE':
+				return 'Done';
+			case 'CANCELED':
+				return 'Canceled';
+			default:
+				return status;
 		}
 	}
 
@@ -69,9 +73,13 @@
 	<!-- Left: main content -->
 	<div class="min-w-0 flex-1">
 		<div class="flex items-center gap-2">
-			<p class="truncate text-base font-semibold">{project.name}</p>
+			<p class="truncate text-xl font-semibold">{project.name}</p>
 			{#if project.status && project.status !== 'ACTIVE'}
-				<span class="shrink-0 rounded-full px-2 py-0.5 text-xxs font-medium {statusColors[project.status] ?? ''}">
+				<span
+					class="text-xxs shrink-0 rounded-full px-2 py-0.5 font-medium {statusColors[
+						project.status
+					] ?? ''}"
+				>
 					{statusLabel(project.status)}
 				</span>
 			{/if}
@@ -83,7 +91,11 @@
 
 		<div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
 			{#if project.deadline}
-				<span class="flex items-center gap-1 text-xs {isOverdue(project.deadline) ? 'font-medium text-red-600' : 'text-muted-foreground'}">
+				<span
+					class="flex items-center gap-1 text-xs {isOverdue(project.deadline)
+						? 'font-medium text-red-600'
+						: 'text-muted-foreground'}"
+				>
 					<Calendar class="h-3 w-3" />
 					{new Date(project.deadline).toLocaleDateString()}
 				</span>
@@ -96,7 +108,7 @@
 
 			{#if project.tags && project.tags.length > 0}
 				{#each project.tags.slice(0, 3) as tag, i (tag)}
-					<span class="rounded-full px-1.5 py-0.5 text-xxs font-medium {tagColor(i)}">
+					<span class="text-xxs rounded-full px-1.5 py-0.5 font-medium {tagColor(i)}">
 						{tag}
 					</span>
 				{/each}
@@ -111,8 +123,8 @@
 
 	<!-- Right: task meta -->
 	<div class="shrink-0 text-right">
-		<p class="text-xs text-muted-foreground">
-			<ListTodo class="mr-0.5 inline h-3 w-3" />
+		<p class="text-sm text-muted-foreground">
+			<ListTodo class="mr-0.5 inline h-4 w-4" />
 			{project._count.tasks} tasks
 		</p>
 		{#if (project._myTaskCount ?? 0) > 0}
