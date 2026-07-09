@@ -204,7 +204,6 @@
 					<tr>
 						<th class="px-4 py-3 text-left font-medium">Project</th>
 						<th class="px-4 py-3 text-left font-medium">Status</th>
-						<th class="px-4 py-3 text-left font-medium">Tags</th>
 						<th class="px-4 py-3 text-left font-medium">Owner</th>
 						<th class="w-16 px-4 py-3 text-left font-medium">Actions</th>
 					</tr>
@@ -238,15 +237,8 @@
 										{descriptionPreview(project.description)}
 									</div>
 								{/if}
-							</td>
-							<td class="px-4 py-3">
-								<span class="text-xs font-semibold {statusColors[project.status] ?? ''}">
-									{statusLabel(project.status)}
-								</span>
-							</td>
-							<td class="px-4 py-3">
 								{#if project.tags && project.tags.length > 0}
-									<div class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+									<div class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
 										{#each project.tags.slice(0, 5) as tag, i (tag)}
 											<span class="text-xs font-medium {tagColor(i)}">{tag}</span>
 										{/each}
@@ -255,6 +247,11 @@
 										{/if}
 									</div>
 								{/if}
+							</td>
+							<td class="px-4 py-3">
+								<span class="text-xs font-semibold {statusColors[project.status] ?? ''}">
+									{statusLabel(project.status)}
+								</span>
 							</td>
 							<td class="px-4 py-3">
 								<div>{project.createdBy.name}</div>
