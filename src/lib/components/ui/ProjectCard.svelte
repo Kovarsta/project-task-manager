@@ -87,7 +87,7 @@
 						: 'text-muted-foreground'}"
 				>
 					<Calendar class="h-3 w-3" />
-					{new Date(project.deadline).toLocaleDateString()}
+					{new Date(project.deadline).toLocaleDateString('en-GB')}
 				</span>
 			{:else}
 				<span class="flex items-center gap-1 text-xs text-muted-foreground/40 italic">
@@ -120,7 +120,7 @@
 			</p>
 			{#if project._earliestDue}
 				<p class="text-xxs text-muted-foreground">
-					due {new Date(project._earliestDue).toLocaleDateString()}
+					due {new Date(project._earliestDue).toLocaleDateString('en-GB')}
 				</p>
 			{/if}
 		{/if}

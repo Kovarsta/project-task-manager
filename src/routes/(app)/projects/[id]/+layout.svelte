@@ -120,7 +120,7 @@
 							: 'text-muted-foreground'}"
 					>
 						<Calendar class="h-3.5 w-3.5" />
-						{new Date(data.project.deadline).toLocaleDateString()}
+						{new Date(data.project.deadline).toLocaleDateString('en-GB')}
 					</span>
 				{/if}
 				<DropdownMenu.Root>

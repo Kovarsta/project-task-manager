@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireSuperAdmin } from '$lib/server/auth';
+import { projectSearchFilter } from '$lib/server/project-search';
 import type { RequestEvent } from '@sveltejs/kit';
 
 // GET: Fetch all projects
@@ -14,13 +15,7 @@ export async function GET(event: RequestEvent) {
 	const skip = (page - 1) * limit;
 
 	const where = {
-		...(q && {
-			OR: [
-				{ name: { contains: q, mode: 'insensitive' as const } },
-				{ tags: { has: q.toLowerCase() } },
-				{ description: { contains: q, mode: 'insensitive' as const } }
-			]
-		})
+		...(q && projectSearchFilter(q))
 	};
 
 	const [projects, total] = await Promise.all([
