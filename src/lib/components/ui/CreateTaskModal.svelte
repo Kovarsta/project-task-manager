@@ -8,6 +8,7 @@
 	import RichTextEditor from '$lib/components/ui/RichTextEditor.svelte';
 	import NativeSelect from '$lib/components/ui/NativeSelect.svelte';
 	import { invalidateAll } from '$app/navigation';
+	import { sanitizeHtml } from '$lib/sanitize';
 
 	let dueDateInput = $state<HTMLInputElement | null>(null);
 	let errors = $state({ title: false, description: false });
@@ -73,7 +74,7 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					title: title.trim(),
-					description: plainDesc ? description.trim() : null,
+					description: plainDesc ? sanitizeHtml(description.trim()) : null,
 					tags,
 					status,
 					priority,

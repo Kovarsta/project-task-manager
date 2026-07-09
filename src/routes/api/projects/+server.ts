@@ -2,6 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireAuth } from '$lib/server/auth';
 import { logActivity } from '$lib/server/activity';
+import { sanitizeHtml } from '$lib/sanitize';
 import type { RequestEvent } from '@sveltejs/kit';
 
 // GET: View all projects
@@ -116,7 +117,8 @@ export async function POST(event: RequestEvent) {
 	if (!name) throw error(400, 'Project name is required');
 	if (name.length > 50) throw error(400, 'Project name must be under 50 characters');
 
-	const description = body.description?.trim() || null;
+	const rawDesc = body.description?.trim() || null;
+	const description = rawDesc ? sanitizeHtml(rawDesc) : null;
 	if (description) {
 		const charCount = description.replace(/<[^>]*>/g, '').trim().length;
 		if (charCount > 60) throw error(400, 'Description must be under 60 characters');

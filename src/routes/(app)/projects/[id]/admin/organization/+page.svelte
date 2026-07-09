@@ -9,6 +9,7 @@
 	import TagInput from '$lib/components/ui/TagInput.svelte';
 	import RichTextEditor from '$lib/components/ui/RichTextEditor.svelte';
 	import UserSearchSelect from '$lib/components/ui/UserSearchSelect.svelte';
+	import { sanitizeHtml } from '$lib/sanitize';
 
 	let { data } = $props<{
 		data: {
@@ -89,7 +90,7 @@
 				body: JSON.stringify({
 					name: name.trim(),
 					status,
-					description: description.trim() || null,
+					description: sanitizeHtml(description.trim()) || null,
 					deadline: deadline || null,
 					tags
 				})

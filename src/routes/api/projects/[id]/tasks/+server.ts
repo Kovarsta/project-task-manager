@@ -2,6 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireProjectMember, requireProjectAdmin } from '$lib/server/auth';
 import { logActivity } from '$lib/server/activity';
+import { sanitizeHtml } from '$lib/sanitize';
 import type { RequestEvent } from '@sveltejs/kit';
 import { TaskStatus, TaskPriority } from '@prisma/client';
 
@@ -68,7 +69,7 @@ export async function POST(event: RequestEvent) {
 	if (!title) throw error(400, 'Title is required');
 	if (title.length > 100) throw error(400, 'Title must be under 100 characters');
 
-	const description = body.description?.trim();
+	const description = sanitizeHtml(body.description?.trim() ?? '') || null;
 	if (description && description.length > 2000) {
 		throw error(400, 'Description must be under 2000 characters');
 	}

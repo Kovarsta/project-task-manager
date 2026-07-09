@@ -9,6 +9,7 @@
 	import TagInput from '$lib/components/ui/TagInput.svelte';
 	import RichTextEditor from '$lib/components/ui/RichTextEditor.svelte';
 	import NativeSelect from '$lib/components/ui/NativeSelect.svelte';
+	import { sanitizeHtml } from '$lib/sanitize';
 
 	let dueDateInput = $state<HTMLInputElement | null>(null);
 	let errors = $state({ title: false, description: false });
@@ -82,7 +83,7 @@
 		try {
 			const body: Record<string, unknown> = {
 				title: title.trim(),
-				description: plainDesc ? description.trim() : null,
+				description: plainDesc ? sanitizeHtml(description.trim()) : null,
 				tags,
 				status,
 				priority,
