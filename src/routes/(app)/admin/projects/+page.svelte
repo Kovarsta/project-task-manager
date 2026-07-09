@@ -24,6 +24,15 @@
 	let sortField = $state<'name' | 'tasks' | 'members' | 'created' | 'status'>('name');
 	let sortDir = $state<'asc' | 'desc'>('asc');
 
+	function statusLabel(s: string) {
+		switch (s) {
+			case 'ON_HOLD': return 'Hold';
+			case 'COMPLETE': return 'Done';
+			case 'CANCELED': return 'Canceled';
+			default: return s;
+		}
+	}
+
 	const tagColors = [
 		'text-blue-600 dark:text-blue-400',
 		'text-purple-600 dark:text-purple-400',
@@ -58,7 +67,7 @@
 			} else if (sortField === 'members') {
 				cmp = a._count.members - b._count.members;
 			} else if (sortField === 'status') {
-				cmp = (a.status ?? '').localeCompare(b.status ?? '');
+				cmp = (a.deactivatedAt ? 1 : 0) - (b.deactivatedAt ? 1 : 0);
 			} else if (sortField === 'created') {
 				cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
 			}
@@ -110,15 +119,6 @@
 
 	function shortDate(dateStr: string) {
 		return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-	}
-
-	function statusLabel(status: string) {
-		switch (status) {
-			case 'ON_HOLD': return 'Hold';
-			case 'COMPLETE': return 'Done';
-			case 'CANCELED': return 'Canceled';
-			default: return status;
-		}
 	}
 
 	function askAction(project: AdminProject, action: 'deactivate' | 'reactivate') {
@@ -198,13 +198,13 @@
 					{#each sorted as project (project.id)}
 						<tr class="border-t transition-colors hover:bg-muted/20 {project.deactivatedAt ? 'opacity-50' : ''}">
 							<td class="px-4 py-3">
-								<div class="font-medium">{project.name}</div>
+								<div class="flex items-center gap-2">
+									<span class="font-medium">{project.name}</span>
+									<span class="text-xs text-muted-foreground">
+										{statusLabel(project.status)}
+									</span>
+								</div>
 								<div class="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
-									{#if project.deactivatedAt}
-										<span class="flex items-center gap-1 font-medium text-red-500">
-											Deactivated
-										</span>
-									{/if}
 									<span class="flex items-center gap-1">
 										<ListTodo class="h-3 w-3" />
 										{project._count.tasks} tasks
@@ -235,8 +235,8 @@
 								{/if}
 							</td>
 							<td class="px-4 py-3">
-								<span class="text-xs font-semibold text-muted-foreground">
-									{project.status}
+								<span class="text-xs font-semibold {project.deactivatedAt ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
+									{project.deactivatedAt ? 'Deactivated' : 'Active'}
 								</span>
 							</td>
 							<td class="px-4 py-3">
