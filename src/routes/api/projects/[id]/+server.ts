@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
-import { requireProjectAdmin, requireProjectMember } from '$lib/server/auth';
+import { requireProjectAdmin, requireProjectMember, requireProjectOwner } from '$lib/server/auth';
 import { sanitizeHtml } from '$lib/sanitize';
 import type { RequestEvent } from '@sveltejs/kit';
 
@@ -90,10 +90,10 @@ export async function PATCH(event: RequestEvent) {
 	return json(project);
 }
 
-// DELETE: deactivate (soft delete)
+// DELETE: deactivate (soft delete) — owner only
 export async function DELETE(event: RequestEvent) {
 	const projectId = getProjectId(event);
-	await requireProjectAdmin(event, projectId);
+	await requireProjectOwner(event, projectId);
 
 	await prisma.project.update({
 		where: { id: projectId },

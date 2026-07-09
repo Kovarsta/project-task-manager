@@ -49,6 +49,7 @@ export async function requireProjectAdmin(event: RequestEvent, projectId: number
 
 export async function requireProjectOwner(event: RequestEvent, projectId: number) {
 	const user = await requireAuth(event);
+	await assertProjectActive(projectId);
 
 	const member = await prisma.projectMember.findUnique({
 		where: {
