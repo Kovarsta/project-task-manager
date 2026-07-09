@@ -1,10 +1,7 @@
-import nodemailer from 'nodemailer';
-import { MailtrapTransport } from 'mailtrap';
+import { MailtrapClient } from 'mailtrap';
 import { env } from '$env/dynamic/private';
 
-const transport = nodemailer.createTransport(
-	MailtrapTransport({ token: env.MAILTRAP_TOKEN! })
-);
+const client = new MailtrapClient({ token: env.MAILTRAP_TOKEN });
 
 export async function sendInviteEmail(to: string, projectName: string, link: string) {
 	const html = `<!DOCTYPE html>
@@ -66,9 +63,9 @@ export async function sendInviteEmail(to: string, projectName: string, link: str
 </html>`;
 
 	try {
-		await transport.sendMail({
-			from: { address: env.EMAIL_FROM_ADDRESS ?? 'hello@demomailtrap.co', name: 'Project Manager' },
-			to,
+		await client.send({
+			from: { email: env.EMAIL_FROM_ADDRESS || 'hello@demomailtrap.co', name: 'Project Manager' },
+			to: [{ email: to }],
 			subject: `You've been invited to ${projectName}`,
 			html
 		});
