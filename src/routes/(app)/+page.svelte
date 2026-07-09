@@ -70,17 +70,7 @@
 	const activeTab = $derived(page.url.searchParams.get('tab') === 'shared' ? 'shared' : 'my');
 
 	function sortProjects(projects: Project[]) {
-		const q = search.toLowerCase();
-		return [...projects]
-			.filter((p) => {
-				if (!q) return true;
-				return (
-					p.name.toLowerCase().includes(q) ||
-					p.tags?.some((tag) => tag.toLowerCase().includes(q)) ||
-					stripHtml(p.description ?? '').toLowerCase().includes(q)
-				);
-			})
-			.sort((a, b) => {
+		return [...projects].sort((a, b) => {
 				let cmp = 0;
 				if (sortField === 'name') {
 					cmp = a.name.localeCompare(b.name);
