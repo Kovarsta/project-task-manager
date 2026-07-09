@@ -20,7 +20,9 @@ export async function GET(event: RequestEvent) {
 			skip,
 			take: limit
 		}),
-		prisma.project.count({ where: { createdById: user.id, members: { some: { userId: user.id } } } })
+		prisma.project.count({
+			where: { createdById: user.id, members: { some: { userId: user.id } } }
+		})
 	]);
 
 	const [sharedProjects, sharedTotal] = await Promise.all([
@@ -96,9 +98,21 @@ export async function POST(event: RequestEvent) {
 	if (!name) throw error(400, 'Project name is required');
 	if (name.length > 50) throw error(400, 'Project name must be under 50 characters');
 
+	const description = body.description?.trim() || null;
+	const deadline = body.deadline ? new Date(body.deadline) : null;
+
+	const rawTags: string[] = Array.isArray(body.tags) ? body.tags : [];
+	const tags = rawTags.map((t: string) => String(t).trim().toLowerCase()).filter(Boolean);
+	if (tags.length > 10) throw error(400, 'Maximum 10 tags allowed');
+	if (tags.some((t: string) => t.length > 30))
+		throw error(400, 'Each tag must be under 30 characters');
+
 	const project = await prisma.project.create({
 		data: {
 			name,
+			description,
+			deadline,
+			tags,
 			createdById: user.id,
 			members: {
 				create: {

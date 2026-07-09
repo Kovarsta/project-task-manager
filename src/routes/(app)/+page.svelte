@@ -6,6 +6,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import ProjectCard from '$lib/components/ui/ProjectCard.svelte';
+	import TagInput from '$lib/components/ui/TagInput.svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { Project } from '$lib/type.js';
 	import Pagination from '$lib/components/ui/Pagination.svelte';
@@ -20,6 +21,9 @@
 	let search = $state('');
 	let showCreate = $state(false);
 	let newName = $state('');
+	let newDescription = $state('');
+	let newDeadline = $state('');
+	let newTags = $state<string[]>([]);
 	let creating = $state(false);
 
 	let sortField = $state<'createdAt' | 'name' | 'tasks' | 'attention'>('createdAt');
@@ -87,7 +91,12 @@
 			const res = await fetch('/api/projects', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ name: newName.trim() })
+				body: JSON.stringify({
+					name: newName.trim(),
+					description: newDescription.trim() || null,
+					deadline: newDeadline || null,
+					tags: newTags
+				})
 			});
 
 			if (!res.ok) {
@@ -100,6 +109,9 @@
 			const project = await res.json();
 			showCreate = false;
 			newName = '';
+			newDescription = '';
+			newDeadline = '';
+			newTags = [];
 			creating = false;
 
 			await goto(`/projects/${project.id}`);
@@ -130,7 +142,7 @@
 					<Button
 						variant={sortField === field ? 'secondary' : 'ghost'}
 						size="sm"
-						class="gap-1 text-xs h-8"
+						class="h-8 gap-1 text-xs"
 						onclick={() => handleSortClick(field as any)}
 					>
 						{label}
@@ -153,33 +165,33 @@
 			</Button>
 		</div>
 
-	{#if activeTab === 'my'}
-		<section>
-			<h2 class="mb-3 text-sm font-semibold">My Projects</h2>
-			{#if filteredMy.length === 0}
-				<p class="text-sm text-muted-foreground">No projects found</p>
-			{:else}
-				<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-					{#each filteredMy as project (project.id)}
-						<ProjectCard {project} />
-					{/each}
-				</div>
-			{/if}
-		</section>
-	{:else}
-		<section>
-			<h2 class="mb-3 text-sm font-semibold">Shared Projects</h2>
-			{#if filteredShared.length === 0}
-				<p class="text-sm text-muted-foreground">No shared projects</p>
-			{:else}
-				<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-					{#each filteredShared as project (project.id)}
-						<ProjectCard {project} />
-					{/each}
-				</div>
-			{/if}
-		</section>
-	{/if}
+		{#if activeTab === 'my'}
+			<section>
+				<h2 class="mb-3 text-sm font-semibold">My Projects</h2>
+				{#if filteredMy.length === 0}
+					<p class="text-sm text-muted-foreground">No projects found</p>
+				{:else}
+					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+						{#each filteredMy as project (project.id)}
+							<ProjectCard {project} />
+						{/each}
+					</div>
+				{/if}
+			</section>
+		{:else}
+			<section>
+				<h2 class="mb-3 text-sm font-semibold">Shared Projects</h2>
+				{#if filteredShared.length === 0}
+					<p class="text-sm text-muted-foreground">No shared projects</p>
+				{:else}
+					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+						{#each filteredShared as project (project.id)}
+							<ProjectCard {project} />
+						{/each}
+					</div>
+				{/if}
+			</section>
+		{/if}
 	</div>
 
 	<Pagination
@@ -192,20 +204,47 @@
 
 <!-- Create Modal -->
 <Dialog.Root bind:open={showCreate}>
-	<Dialog.Content class="max-w-sm">
+	<Dialog.Content class="max-w-lg">
 		<Dialog.Header>
 			<Dialog.Title>Create a new project</Dialog.Title>
 		</Dialog.Header>
-		<div class="py-2">
-			<Input
-				bind:value={newName}
-				placeholder="Bakery shop, eventing setup..."
-				onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && createProject()}
-				class={errors.title ? 'border-red-500 focus-visible:ring-red-500' : ''}
-			/>
-			{#if errors.title}
-				<p class="mt-1 text-xs text-red-500">Project name is required</p>
-			{/if}
+		<div class="space-y-4 py-2">
+			<div>
+				<label class="mb-1 block text-sm font-medium"
+					>Name <span class="text-red-500">*</span></label
+				>
+				<Input
+					bind:value={newName}
+					placeholder="Bakery shop, eventing setup..."
+					onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && createProject()}
+					class={errors.title ? 'border-red-500 focus-visible:ring-red-500' : ''}
+				/>
+				{#if errors.title}
+					<p class="mt-1 text-xs text-red-500">Project name is required</p>
+				{/if}
+			</div>
+
+			<div>
+				<label class="mb-1 block text-sm font-medium">Description</label>
+				<textarea
+					bind:value={newDescription}
+					placeholder="Describe the project..."
+					class="min-h-20 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/60 focus-visible:ring-3 focus-visible:ring-ring/50"
+				></textarea>
+			</div>
+
+			<div>
+				<label class="mb-1 block text-sm font-medium">Deadline</label>
+				<Input type="date" bind:value={newDeadline} />
+			</div>
+
+			<div>
+				<label class="mb-1 block text-sm font-medium">Tags</label>
+				<TagInput bind:tags={newTags} />
+				<p class="mt-1 text-xs text-muted-foreground/60">
+					e.g. tag1, tag2, tag3... (press Enter or comma to add) · max 10 tags
+				</p>
+			</div>
 		</div>
 		<Dialog.Footer>
 			<Button class="w-full" disabled={creating} onclick={createProject}>

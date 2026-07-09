@@ -27,6 +27,13 @@ enum TaskPriority {
   HIGHEST
 }
 
+enum ProjectStatus {
+  ACTIVE
+  ON_HOLD
+  CANCELED
+  COMPLETE
+}
+
 enum InviteStatus {
   PENDING
   ACCEPTED
@@ -54,15 +61,19 @@ model User {
 }
 
 model Project {
-  id          Int       @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
   name        String
-  createdBy   User      @relation("CreatedBy", fields: [createdById], references: [id])
+  status      ProjectStatus @default(ACTIVE)
+  deadline    DateTime?
+  tags        String[]      @default([])
+  description String?
+  createdBy   User          @relation("CreatedBy", fields: [createdById], references: [id])
   createdById Int
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime      @default(now())
 
-  members     ProjectMember[]
-  invites     ProjectInvite[]
-  tasks       Task[]
+  members      ProjectMember[]
+  invites      ProjectInvite[]
+  tasks        Task[]
   activityLogs ActivityLog[]
 }
 
