@@ -23,22 +23,22 @@
 	]);
 </script>
 
-<div class="flex h-full">
-	<!-- Side nav -->
-	<aside class="border-r pr-8">
-		<nav class="flex flex-col gap-1">
-			{#each tabs as tab (tab.path)}
-				{@const active = page.url.pathname === tab.path}
-				<button
-					onclick={() => goto(tab.path)}
-					class="rounded px-6 py-1.5 text-left text-sm hover:bg-accent
-            {active ? 'bg-accent font-medium' : 'text-muted-foreground'}"
-				>
-					{tab.label}
-				</button>
-			{/each}
-		</nav>
-	</aside>
+<div class="flex h-full flex-col">
+	<!-- Top nav tabs -->
+	<div class="flex gap-4 border-b">
+		{#each tabs as tab (tab.path)}
+			{@const active = page.url.pathname === tab.path}
+			<button
+				onclick={() => goto(tab.path)}
+				class="border-b-2 px-1 py-2 text-sm transition-colors
+          {active
+            ? 'border-blue-500 font-medium text-blue-500'
+            : 'border-transparent text-muted-foreground hover:text-foreground'}"
+			>
+				{tab.label}
+			</button>
+		{/each}
+	</div>
 
 	<!-- Tab content -->
 	<main class="flex-1 overflow-y-auto p-6">
