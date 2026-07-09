@@ -24,20 +24,6 @@
 	let sortField = $state<'name' | 'tasks' | 'members' | 'created' | 'status'>('name');
 	let sortDir = $state<'asc' | 'desc'>('asc');
 
-	const STATUS_ORDER: Record<string, number> = {
-		ACTIVE: 0,
-		ON_HOLD: 1,
-		CANCELED: 2,
-		COMPLETE: 3
-	};
-
-	const statusColors: Record<string, string> = {
-		ACTIVE: 'text-green-600 dark:text-green-400',
-		ON_HOLD: 'text-amber-600 dark:text-amber-400',
-		CANCELED: 'text-red-600 dark:text-red-400',
-		COMPLETE: 'text-blue-600 dark:text-blue-400'
-	};
-
 	const tagColors = [
 		'text-blue-600 dark:text-blue-400',
 		'text-purple-600 dark:text-purple-400',
@@ -72,7 +58,7 @@
 			} else if (sortField === 'members') {
 				cmp = a._count.members - b._count.members;
 			} else if (sortField === 'status') {
-				cmp = (STATUS_ORDER[a.status] ?? 0) - (STATUS_ORDER[b.status] ?? 0);
+				cmp = (a.deactivatedAt ? 1 : 0) - (b.deactivatedAt ? 1 : 0);
 			} else if (sortField === 'created') {
 				cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
 			}
@@ -249,8 +235,8 @@
 								{/if}
 							</td>
 							<td class="px-4 py-3">
-								<span class="text-xs font-semibold {statusColors[project.status] ?? ''}">
-									{statusLabel(project.status)}
+								<span class="text-xs font-semibold {project.deactivatedAt ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
+									{project.deactivatedAt ? 'Deactivated' : 'Active'}
 								</span>
 							</td>
 							<td class="px-4 py-3">
@@ -322,7 +308,7 @@
 						</div>
 						<div>
 							<div class="text-xs text-muted-foreground">Status</div>
-							<div class="font-medium">{statusLabel(confirmAction.project.status)}</div>
+							<div class="font-medium">{confirmAction.project.deactivatedAt ? 'Deactivated' : 'Active'}</div>
 						</div>
 						<div>
 							<div class="text-xs text-muted-foreground">Tasks</div>
