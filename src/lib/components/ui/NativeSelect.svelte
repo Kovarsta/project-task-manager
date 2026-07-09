@@ -20,7 +20,7 @@
 	bind:this={ref}
 	bind:value
 	class={cn(
-		'dark:bg-input/30 border-input focus-visible:border-ring focus-visible:ring-ring/50 disabled:bg-input/50 dark:disabled:bg-input/80 h-8 rounded-lg border bg-transparent px-2.5 py-1 pr-8 text-sm text-foreground transition-colors focus-visible:ring-3 outline-none disabled:cursor-not-allowed disabled:opacity-50',
+		'h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 pr-8 text-sm text-foreground transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 dark:bg-input/30 dark:disabled:bg-input/80',
 		className
 	)}
 	{...restProps}

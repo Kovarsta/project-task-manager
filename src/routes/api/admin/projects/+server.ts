@@ -36,4 +36,3 @@ export async function GET(event: RequestEvent) {
 		meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
 	});
 }
-

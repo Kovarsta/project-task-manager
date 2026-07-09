@@ -7,11 +7,11 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const parentData = await parent();
 
 	const membership = parentData.project.members?.find(
-		(m: { user: { id: number }; isOwner: boolean }) =>
-			m.user.id === Number(session?.user?.id)
+		(m: { user: { id: number }; isOwner: boolean }) => m.user.id === Number(session?.user?.id)
 	);
 
-	if (!membership?.isOwner) throw error(403, 'Only the project owner can access organization settings');
+	if (!membership?.isOwner)
+		throw error(403, 'Only the project owner can access organization settings');
 
 	const projectId = Number(params.id);
 

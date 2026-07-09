@@ -62,7 +62,9 @@
 >
 	{#each tags as tag, i (tag)}
 		<span
-			class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium {tagColor(i)}"
+			class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium {tagColor(
+				i
+			)}"
 		>
 			{tag}
 			{#if !disabled}
@@ -83,7 +85,7 @@
 			bind:value={inputValue}
 			{disabled}
 			{placeholder}
-			class="min-w-24 flex-1 border-0 p-0 shadow-none focus:ring-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60 disabled:cursor-not-allowed"
+			class="min-w-24 flex-1 border-0 bg-transparent p-0 text-sm shadow-none outline-none placeholder:text-muted-foreground/60 focus:ring-0 disabled:cursor-not-allowed"
 			onkeydown={onKeydown}
 			onblur={onBlur}
 		/>

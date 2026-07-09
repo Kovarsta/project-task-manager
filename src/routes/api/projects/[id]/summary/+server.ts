@@ -50,12 +50,17 @@ export async function GET(event: RequestEvent) {
 	]);
 
 	const priorityWeight: Record<string, number> = {
-		HIGHEST: 5, HIGH: 4, MEDIUM: 3, LOW: 2, LOWEST: 1
+		HIGHEST: 5,
+		HIGH: 4,
+		MEDIUM: 3,
+		LOW: 2,
+		LOWEST: 1
 	};
 
 	const urgentTasks = activeTasks
 		.sort((a, b) => {
-			if (a.dueDate && b.dueDate) return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+			if (a.dueDate && b.dueDate)
+				return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
 			if (a.dueDate) return -1;
 			if (b.dueDate) return 1;
 			return (priorityWeight[b.priority] ?? 3) - (priorityWeight[a.priority] ?? 3);
@@ -79,4 +84,3 @@ export async function GET(event: RequestEvent) {
 		}
 	});
 }
-

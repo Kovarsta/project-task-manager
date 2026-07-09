@@ -54,7 +54,8 @@ export async function PATCH(event: RequestEvent) {
 		const rawTags: string[] = Array.isArray(body.tags) ? body.tags : [];
 		const tags = rawTags.map((t: string) => String(t).trim().toLowerCase()).filter(Boolean);
 		if (tags.length > 10) throw error(400, 'Maximum 10 tags allowed');
-		if (tags.some((t: string) => t.length > 30)) throw error(400, 'Each tag must be under 30 characters');
+		if (tags.some((t: string) => t.length > 30))
+			throw error(400, 'Each tag must be under 30 characters');
 		body.tags = tags;
 	}
 
@@ -118,11 +119,14 @@ export async function PATCH(event: RequestEvent) {
 		});
 	});
 
-	const action = newStatus !== oldStatus
-		? newStatus === 'DONE' ? 'task_completed'
-		: newStatus === 'DOING' ? 'task_started'
-		: 'task_status_changed'
-		: 'task_updated';
+	const action =
+		newStatus !== oldStatus
+			? newStatus === 'DONE'
+				? 'task_completed'
+				: newStatus === 'DOING'
+					? 'task_started'
+					: 'task_status_changed'
+			: 'task_updated';
 
 	await logActivity({
 		projectId: task.projectId,
@@ -161,4 +165,3 @@ export async function DELETE(event: RequestEvent) {
 
 	return json({ success: true });
 }
-

@@ -3,19 +3,24 @@
 	import { goto } from '$app/navigation';
 	import type { ProjectMember } from '$lib/type';
 
-	let { data, children } = $props<{ data: { project: { members: ProjectMember[] } }; children: import('svelte').Snippet }>();
+	let { data, children } = $props<{
+		data: { project: { members: ProjectMember[] } };
+		children: import('svelte').Snippet;
+	}>();
 	const projectId = page.params.id;
 
 	const isOwner = $derived(
-		data.project.members?.find((m: ProjectMember) => m.user.id === Number(page.data.session?.user?.id))?.isOwner ?? false
+		data.project.members?.find(
+			(m: ProjectMember) => m.user.id === Number(page.data.session?.user?.id)
+		)?.isOwner ?? false
 	);
 
-	const tabs = $derived(
-		[
-			{ label: 'Users', path: `/projects/${projectId}/admin/users` },
-			...(isOwner ? [{ label: 'Organization', path: `/projects/${projectId}/admin/organization` }] : [])
-		]
-	);
+	const tabs = $derived([
+		{ label: 'Users', path: `/projects/${projectId}/admin/users` },
+		...(isOwner
+			? [{ label: 'Organization', path: `/projects/${projectId}/admin/organization` }]
+			: [])
+	]);
 </script>
 
 <div class="flex h-full">
@@ -40,4 +45,3 @@
 		{@render children()}
 	</main>
 </div>
-
