@@ -158,7 +158,7 @@
 			{#if isAdmin}
 				<Button
 					size="sm"
-					class="gap-1 bg-cyan-400 text-white hover:bg-cyan-500"
+					class="gap-1 bg-cyan-400 text-cyan-950 hover:bg-cyan-500"
 					onclick={() => (showCreateTask = true)}
 				>
 					<Plus class="h-4 w-4" /> Create
