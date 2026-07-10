@@ -203,7 +203,7 @@
 
 <h3 class="mb-4 text-lg font-semibold">Ownership</h3>
 {#if data.admins.length > 0}
-	<div class="mb-8 max-w-md">
+		<div class="mb-8 max-w-lg">
 		<label class="text-sm font-medium">Transfer Ownership</label>
 		<p class="mb-2 text-xs text-muted-foreground">
 			Transfer the project owner role to another admin.
@@ -226,12 +226,12 @@
 		</div>
 	</div>
 {:else}
-	<div class="mb-8 max-w-md">
+	<div class="mb-8 max-w-lg">
 		<p class="text-sm text-muted-foreground">No other admins to transfer ownership to.</p>
 	</div>
 {/if}
 
-<div class="max-w-md">
+<div class="max-w-lg">
 	<p class="mb-2 text-sm font-medium text-red-500">Danger zone</p>
 	<Button
 		class="w-full bg-red-400 text-white hover:bg-red-500"
