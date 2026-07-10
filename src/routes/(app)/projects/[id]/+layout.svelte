@@ -67,6 +67,13 @@
 		return new Date(dateStr) < new Date();
 	}
 
+	function daysRemaining(dateStr: string) {
+		const now = new Date();
+		const target = new Date(dateStr);
+		const diff = target.getTime() - now.getTime();
+		return Math.ceil(diff / 86400000);
+	}
+
 	type SessionUser = {
 		id: string;
 		email: string;
@@ -116,13 +123,17 @@
 					</span>
 				{/if}
 				{#if data.project.deadline}
+					{@const remaining = daysRemaining(data.project.deadline)}
 					<span
-						class="flex items-center gap-1 text-xs {isOverdue(data.project.deadline)
+						class="flex items-center gap-1 text-xs {remaining <= 0
 							? 'font-medium text-red-600'
-							: 'text-muted-foreground'}"
+							: remaining <= 2
+								? 'font-medium text-amber-600'
+								: 'text-muted-foreground'}"
 					>
 						<Calendar class="h-3.5 w-3.5" />
 						{new Date(data.project.deadline).toLocaleDateString('en-GB')}
+						- {remaining < 0 ? 'Overdue' : remaining === 0 ? 'Due today' : `${remaining}d left`}
 					</span>
 				{/if}
 				<DropdownMenu.Root>
