@@ -4,11 +4,13 @@
 	let {
 		value = $bindable(),
 		placeholder = 'Search by name or email...',
-		members = null
+		members = null,
+		currentAssignee = null
 	}: {
 		value: string;
 		placeholder?: string;
 		members?: { user: { id: number; name: string; email: string } }[] | null;
+		currentAssignee?: { id: number; name: string; email: string } | null;
 	} = $props();
 
 	let query = $state('');
@@ -20,9 +22,12 @@
 	let lastSyncedValue = $state<string | null>(null);
 
 	$effect(() => {
-		if (value && members && value !== lastSyncedValue) {
-			const match = members.find((m) => String(m.user.id) === String(value));
-			if (match) query = match.user.name;
+		if (value && value !== lastSyncedValue) {
+			if (members) {
+				const match = members.find((m) => String(m.user.id) === String(value));
+				if (match) query = match.user.name;
+				else if (currentAssignee && String(currentAssignee.id) === value) query = currentAssignee.name;
+			}
 			lastSyncedValue = value;
 		}
 	});

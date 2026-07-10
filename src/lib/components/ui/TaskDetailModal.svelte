@@ -275,6 +275,7 @@
 						<UserSearchSelect
 							bind:value={assigneeId}
 							{members}
+							currentAssignee={task.assignee}
 							placeholder="Search project members..."
 						/>
 					{:else}
