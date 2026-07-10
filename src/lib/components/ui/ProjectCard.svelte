@@ -38,6 +38,13 @@
 		return new Date(dateStr) < new Date();
 	}
 
+	function daysRemaining(dateStr: string) {
+		const now = new Date();
+		const target = new Date(dateStr);
+		const diff = target.getTime() - now.getTime();
+		return Math.ceil(diff / 86400000);
+	}
+
 	function statusLabel(status: string) {
 		switch (status) {
 			case 'ON_HOLD':
@@ -81,13 +88,17 @@
 
 		<div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
 			{#if project.deadline}
+				{@const remaining = daysRemaining(project.deadline)}
 				<span
-					class="flex items-center gap-1 text-xs {isOverdue(project.deadline)
+					class="flex items-center gap-1 text-xs {remaining <= 0
 						? 'font-medium text-red-600'
-						: 'text-muted-foreground'}"
+						: remaining <= 2
+							? 'font-medium text-amber-600'
+							: 'text-muted-foreground'}"
 				>
 					<Calendar class="h-3 w-3" />
 					{new Date(project.deadline).toLocaleDateString('en-GB')}
+					- {remaining < 0 ? 'Overdue' : remaining === 0 ? 'Due today' : `${remaining}d left`}
 				</span>
 			{:else}
 				<span class="flex items-center gap-1 text-xs text-muted-foreground/40 italic">
