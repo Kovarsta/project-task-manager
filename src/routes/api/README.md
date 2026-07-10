@@ -1,6 +1,6 @@
 # API Reference
 
-**31 endpoints** across **19 route paths**.
+**30 endpoints** across **20 route paths**.
 
 ---
 
@@ -23,7 +23,7 @@ Get a project by ID. Requires membership. Includes members with user data and no
 Update a project. Requires admin. Fields: `name`, `status`, `description`, `deadline`, `tags`.
 
 ### `DELETE /api/projects/[id]`
-Deactivate (soft delete) a project. Requires admin.
+Deactivate (soft delete) a project. Requires admin. Restores owner-only restriction. Sets `deactivatedAt` timestamp; super admins can reactivate.
 
 ---
 
@@ -49,13 +49,13 @@ Delete a task. Requires admin.
 ## Members
 
 ### `GET /api/projects/[id]/members`
-List project members with user data, ordered by join date, each with assigned task count.
+List project members with user data, ordered by join date, each with assigned task count. Supports `?page=`, `?limit=`, `?q=` (name/email search), `?role=` (`ADMIN`/`MEMBER`). Returns `memberCount` and `adminCount` in meta for stats.
 
 ### `GET /api/projects/[id]/members/[userId]`
 Search users to invite. Accepts `?q=` (min 2 chars), returns up to 5 active matching users.
 
 ### `PATCH /api/projects/[id]/members/[userId]`
-Change a member's role (`ADMIN`/`MEMBER`). Requires admin. Cannot change the owner's role.
+Change a member's role (`ADMIN`/`MEMBER`). Requires admin. Cannot change the owner's role. Admins can only demote themselves — demoting another admin returns `403`.
 
 ### `DELETE /api/projects/[id]/members/[userId]`
 Remove a member. Requires admin. Cannot remove owner, last admin, or yourself (use `/leave`).
@@ -65,10 +65,10 @@ Remove a member. Requires admin. Cannot remove owner, last admin, or yourself (u
 ## Invites
 
 ### `GET /api/projects/[id]/invites`
-List pending invites for a project. Requires admin.
+List all invites for a project. Requires admin.
 
 ### `POST /api/projects/[id]/invites`
-Generate an invite link. Requires admin. Accepts `email` (validated, optional domain restriction). Creates a 7-day-expiring invite and sends an email. Logs activity.
+Generate an invite link. Requires admin. Accepts `email` (validated, optional domain restriction). Rejects duplicate pending invites for the same email. Creates a 7-day-expiring invite and sends an email. Logs activity.
 
 ### `DELETE /api/projects/[id]/invites/[inviteId]`
 Revoke a pending invite. Requires admin.
@@ -78,7 +78,7 @@ Revoke a pending invite. Requires admin.
 ## Project Actions
 
 ### `POST /api/projects/[id]/leave`
-Leave a project. Owner cannot leave. Last admin cannot leave. Unassigns all your tasks first.
+Leave a project. Owner cannot leave. Last admin cannot leave. Retains your task assignments (assignee name stays visible).
 
 ### `POST /api/projects/[id]/transfer-owner`
 Transfer ownership to another member. Requires current owner. Accepts `userId`.
@@ -88,10 +88,13 @@ Transfer ownership to another member. Requires current owner. Accepts `userId`.
 ## Dashboard / Board
 
 ### `GET /api/projects/[id]/summary`
-Dashboard summary for a project. Returns total tasks/members, 7-day completion stats, counts by status, overdue count, top urgent tasks, recent activity, and chart data.
+Dashboard summary for a project. Returns total tasks/members, 7-day completion stats, counts by status, overdue count, top urgent tasks, recent activity (last 5), and chart data.
 
 ### `GET /api/projects/[id]/kanban`
 Tasks grouped by status (`TODO`/`DOING`/`DONE`) for a kanban board. Each group ordered by creation date.
+
+### `GET /api/projects/[id]/activity`
+Paginated activity log for a project. Supports `?page=`, `?limit=`. Returns actions (task create/complete/update/delete, member join/remove, role changes, invites) with user and timestamp. Includes `meta.total` for pagination.
 
 ---
 
@@ -135,4 +138,4 @@ Update a user's super admin status or deactivate/reactivate them. Cannot demote 
 
 ---
 
-**Total: 13 GET · 8 POST · 5 PATCH · 5 DELETE**
+**Total: 13 GET · 8 POST · 5 PATCH · 4 DELETE**
