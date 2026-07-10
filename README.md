@@ -22,16 +22,19 @@ Built as an internship project for Van Lang University.
 ## Features
 
 - **Multi-project management** - create and manage multiple projects simultaneously
-- **Project lifecycle** - projects can be active, on hold, canceled, or complete; admins can deactivate (soft delete) projects; super admins can reactivate them
-- **Rich text descriptions** - TipTap editor with HTML rendering and server-side sanitization
-- **Role-based access control** - Super Admin, Project Admin, and Member roles with distinct permissions
-- **Kanban board** - drag and drop tasks across Todo / Doing / Done columns
-- **Task management** - create, edit, assign, prioritize, and track tasks with due dates
-- **Invite system** - invite members via shareable link with email notification, 7-day expiry, and domain restriction
-- **Weekly statistics** - Chart.js donut chart showing tasks created vs completed in the last 7 days
-- **Tags and deadlines** - tag projects and tasks with color-coded labels, set deadlines with fuzzy date-aware search
-- **Super Admin panel** - system-wide project and user management with deactivation controls
-- **Microsoft SSO ready** - swap provider via environment variables, zero code changes required
+- **Project lifecycle** — projects can be active, on hold, canceled, or complete; admins can deactivate (soft delete) projects; super admins can reactivate them
+- **Rich text descriptions** — TipTap editor with HTML rendering and server-side sanitization
+- **Role-based access control** — Super Admin, Project Admin, and Member roles with distinct permissions; admins can only demote themselves
+- **Kanban board** — drag and drop tasks across Todo / Doing / Done columns
+- **Task management** — create, edit, assign, prioritize, and track tasks with due dates; deadlines show days remaining with color coding
+- **Activity log** — per-project activity timeline with pagination tracking task and member changes
+- **Invite system** — invite members via shareable link with email notification, 7-day expiry, domain restriction, and duplicate detection
+- **Members page** — paginated member list with server-side search and role filtering
+- **Weekly statistics** — Chart.js donut chart showing tasks created vs completed in the last 7 days
+- **Tags and deadlines** — tag projects and tasks with color-coded labels, set deadlines with fuzzy date-aware search
+- **Super Admin panel** — system-wide project and user management with pagination, search, and deactivation controls
+- **Pagination throughout** — all list endpoints support paginated responses with meta
+- **Microsoft SSO ready** — swap provider via environment variables, zero code changes required
 
 ---
 
@@ -167,7 +170,7 @@ src/
     (app)/            # Main app - requires authentication
       +layout.svelte  # Sidebar + navbar shell
       +page           # Project list
-      projects/[id]/  # Project detail (Summary, List, Board, Admin tabs)
+      projects/[id]/  # Project detail (Summary, List, Board, Activity, Admin tabs)
       admin/          # Super Admin panel
     (auth)/           # Public routes - no sidebar
       login/          # Login page
