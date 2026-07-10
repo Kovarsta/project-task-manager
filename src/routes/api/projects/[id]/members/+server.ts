@@ -3,22 +3,38 @@ import { prisma } from '$lib/prisma';
 import { requireProjectMember } from '$lib/server/auth';
 import type { RequestEvent } from '@sveltejs/kit';
 
-// GET: Return members with pagination
+// GET: Return members with pagination and search
 export async function GET(event: RequestEvent) {
 	const projectId = Number(event.params.id);
 	await requireProjectMember(event, projectId);
 
 	const page = Math.max(1, Number(event.url.searchParams.get('page') ?? 1));
 	const limit = Math.min(50, Math.max(1, Number(event.url.searchParams.get('limit') ?? 20)));
+	const q = event.url.searchParams.get('q')?.trim() ?? '';
+	const role = event.url.searchParams.get('role')?.trim() ?? '';
 
-	const [members, total, adminCount] = await Promise.all([
+	const where: Record<string, unknown> = { projectId };
+	const userWhere: Record<string, unknown> = {};
+	if (q) {
+		userWhere.OR = [
+			{ name: { contains: q, mode: 'insensitive' } },
+			{ email: { contains: q, mode: 'insensitive' } }
+		];
+		where.user = userWhere;
+	}
+	if (role === 'ADMIN' || role === 'MEMBER') {
+		where.role = role;
+	}
+
+	const [members, total, memberCount, adminCount] = await Promise.all([
 		prisma.projectMember.findMany({
-			where: { projectId },
+			where,
 			include: { user: true },
 			orderBy: { joinedAt: 'asc' },
 			skip: (page - 1) * limit,
 			take: limit
 		}),
+		prisma.projectMember.count({ where }),
 		prisma.projectMember.count({ where: { projectId } }),
 		prisma.projectMember.count({
 			where: { projectId, OR: [{ role: 'ADMIN' }, { isOwner: true }] }
@@ -45,6 +61,7 @@ export async function GET(event: RequestEvent) {
 			limit,
 			total,
 			totalPages: Math.ceil(total / limit),
+			memberCount,
 			adminCount
 		}
 	});
