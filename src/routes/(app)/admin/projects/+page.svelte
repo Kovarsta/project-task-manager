@@ -148,8 +148,8 @@
 
 <div class="flex h-full flex-col">
 	<div class="flex-1 overflow-y-auto">
-		<div class="mb-4 flex items-center gap-3">
-			<div class="relative max-w-sm flex-1">
+		<div class="mb-4 space-y-3">
+			<div class="relative">
 				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 				<input
 					type="text"
@@ -159,28 +159,30 @@
 					class="w-full rounded-lg border border-input bg-background py-2 pr-4 pl-10 text-sm placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none"
 				/>
 			</div>
-			{#if data.q}
-				<Button variant="ghost" size="sm" onclick={clearSearch}>Clear</Button>
-			{/if}
-			<div class="flex items-center gap-1">
-				<span class="mr-1 text-xs text-muted-foreground">Sort by:</span>
-				{#each [['name', 'Name'], ['status', 'Status'], ['tasks', 'Tasks'], ['members', 'Members'], ['created', 'Created']] as [field, label] (field)}
-					<Button
-						variant={sortField === field ? 'secondary' : 'ghost'}
-						size="sm"
-						class="h-8 gap-1 text-xs"
-						onclick={() => handleSortClick(field as typeof sortField)}
-					>
-						{label}
-						{#if sortField === field}
-							{#if sortDir === 'asc'}
-								<ArrowUp class="h-3.5 w-3.5" />
-							{:else}
-								<ArrowDown class="h-3.5 w-3.5" />
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-1">
+					<span class="mr-1 text-xs text-muted-foreground">Sort by:</span>
+					{#each [['name', 'Name'], ['status', 'Status'], ['tasks', 'Tasks'], ['members', 'Members'], ['created', 'Created']] as [field, label] (field)}
+						<Button
+							variant={sortField === field ? 'secondary' : 'ghost'}
+							size="sm"
+							class="h-8 gap-1 text-xs"
+							onclick={() => handleSortClick(field as typeof sortField)}
+						>
+							{label}
+							{#if sortField === field}
+								{#if sortDir === 'asc'}
+									<ArrowUp class="h-3.5 w-3.5" />
+								{:else}
+									<ArrowDown class="h-3.5 w-3.5" />
+								{/if}
 							{/if}
-						{/if}
-					</Button>
-				{/each}
+						</Button>
+					{/each}
+				</div>
+				{#if data.q}
+					<Button variant="ghost" size="sm" onclick={clearSearch}>Clear</Button>
+				{/if}
 			</div>
 		</div>
 
