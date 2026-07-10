@@ -5,6 +5,7 @@
 		ChartColumn,
 		ListTodo,
 		KanbanSquare,
+		History,
 		MoreHorizontal,
 		Plus,
 		Calendar
@@ -93,7 +94,8 @@
 	const tabs = [
 		{ label: 'Summary', icon: ChartColumn, path: `/projects/${projectId}` },
 		{ label: 'List', icon: ListTodo, path: `/projects/${projectId}/list` },
-		{ label: 'Board', icon: KanbanSquare, path: `/projects/${projectId}/board` }
+		{ label: 'Board', icon: KanbanSquare, path: `/projects/${projectId}/board` },
+		{ label: 'Activity', icon: History, path: `/projects/${projectId}/activity` }
 	];
 </script>
 
