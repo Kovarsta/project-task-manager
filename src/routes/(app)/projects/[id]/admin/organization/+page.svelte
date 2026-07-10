@@ -84,17 +84,21 @@
 		}
 		saving = true;
 		try {
-			const res = await fetch(`/api/projects/${projectId}`, {
-				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					name: name.trim(),
-					status,
-					description: sanitizeHtml(description.trim()) || null,
-					deadline: deadline || null,
-					tags
-				})
-			});
+			const sanitizedDesc = sanitizeHtml(description.trim());
+		const body: Record<string, unknown> = {
+			name: name.trim(),
+			status,
+			deadline: deadline || null,
+			tags
+		};
+		if (sanitizedDesc) {
+			body.description = sanitizedDesc;
+		}
+		const res = await fetch(`/api/projects/${projectId}`, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(body)
+		});
 
 			if (!res.ok) {
 				const err = await res.json();
