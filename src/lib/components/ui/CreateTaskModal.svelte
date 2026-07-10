@@ -242,18 +242,18 @@
 				{creating ? 'Creating...' : 'Create Task'}
 			</Button>
 		</Dialog.Footer>
+
+		{#if showConfirmClose}
+			<div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onclick={() => (showConfirmClose = false)}>
+				<div class="mx-4 w-full max-w-sm rounded-xl bg-popover p-6 text-sm shadow-lg ring-1 ring-foreground/10" onclick={(e) => e.stopPropagation()}>
+					<h3 class="text-base font-semibold text-foreground">Discard changes?</h3>
+					<p class="mt-2 text-muted-foreground">You have unsaved changes. Are you sure you want to discard them?</p>
+					<div class="mt-4 flex gap-2">
+						<Button variant="outline" class="flex-1" onclick={() => (showConfirmClose = false)}>Keep editing</Button>
+						<Button variant="destructive" class="flex-1" onclick={discardAndClose}>Discard</Button>
+					</div>
+				</div>
+			</div>
+		{/if}
 	</Dialog.Content>
 </Dialog.Root>
-
-{#if showConfirmClose}
-	<div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40" onclick={() => (showConfirmClose = false)}>
-		<div class="mx-4 w-full max-w-sm rounded-xl bg-popover p-6 text-sm shadow-lg ring-1 ring-foreground/10" onclick={(e) => e.stopPropagation()}>
-			<h3 class="text-base font-semibold text-foreground">Discard changes?</h3>
-			<p class="mt-2 text-muted-foreground">You have unsaved changes. Are you sure you want to discard them?</p>
-			<div class="mt-4 flex gap-2">
-				<Button variant="outline" class="flex-1" onclick={() => (showConfirmClose = false)}>Keep editing</Button>
-				<Button variant="destructive" class="flex-1" onclick={discardAndClose}>Discard</Button>
-			</div>
-		</div>
-	</div>
-{/if}
