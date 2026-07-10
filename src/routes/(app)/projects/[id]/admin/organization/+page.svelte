@@ -61,6 +61,7 @@
 	let deadline = $state(data.project.deadline ?? '');
 	let tags = $state<string[]>(data.project.tags ?? []);
 	let saving = $state(false);
+	let nameError = $state(false);
 
 	function stripHtml(html: string) {
 		return html.replace(/<[^>]*>/g, '').trim();
@@ -75,10 +76,13 @@
 		description = data.project.description ?? '';
 		deadline = data.project.deadline ?? '';
 		tags = data.project.tags ?? [];
+		nameError = false;
 	});
 
 	async function saveSettings() {
+		nameError = false;
 		if (!name.trim()) {
+			nameError = true;
 			toast.error('Project name is required');
 			return;
 		}
@@ -125,12 +129,27 @@
 	}
 </script>
 
-<h2 class="mb-6 text-xl font-bold">Organization</h2>
+<h2 class="mb-6 text-2xl font-bold">Organization</h2>
 
 <div class="mb-8 max-w-lg space-y-6">
+	<!-- Name -->
+	<div>
+		<label class="text-base font-medium">Project Name <span class="text-red-500">*</span></label>
+		<div class="mt-1">
+			<Input
+				bind:value={name}
+				class={nameError ? 'border-red-500 focus-visible:ring-red-500' : ''}
+				oninput={() => (nameError = false)}
+			/>
+		</div>
+		{#if nameError}
+			<p class="mt-1 text-xs text-red-500">Project name is required</p>
+		{/if}
+	</div>
+
 	<!-- Status -->
 	<div>
-		<label class="text-sm font-medium">Status</label>
+		<label class="text-base font-medium">Status</label>
 		<div class="mt-1">
 			<NativeSelect bind:value={status} class="w-full">
 				<option value="ACTIVE">Active</option>
@@ -141,17 +160,9 @@
 		</div>
 	</div>
 
-	<!-- Name -->
-	<div>
-		<label class="text-sm font-medium">Project Name</label>
-		<div class="mt-1">
-			<Input bind:value={name} />
-		</div>
-	</div>
-
 	<!-- Description -->
 	<div>
-		<label class="text-sm font-medium">Description</label>
+		<label class="text-base font-medium">Description</label>
 		<div class="mt-1">
 			<RichTextEditor bind:content={description} placeholder="Describe the project..." />
 		</div>
@@ -162,7 +173,7 @@
 
 	<!-- Deadline -->
 	<div>
-		<label class="text-sm font-medium">Deadline</label>
+		<label class="text-base font-medium">Deadline</label>
 		<div class="mt-1">
 			<Input type="date" bind:value={deadline} />
 		</div>
@@ -170,7 +181,7 @@
 
 	<!-- Tags -->
 	<div>
-		<label class="text-sm font-medium">Tags</label>
+		<label class="text-base font-medium">Tags</label>
 		<div class="mt-1">
 			<TagInput bind:tags />
 		</div>
@@ -180,8 +191,8 @@
 	</div>
 
 	<!-- Save -->
-	<div class="flex gap-2">
-		<Button onclick={saveSettings} disabled={saving}>
+	<div>
+		<Button class="w-full" onclick={saveSettings} disabled={saving}>
 			{saving ? 'Saving...' : 'Save Settings'}
 		</Button>
 	</div>
