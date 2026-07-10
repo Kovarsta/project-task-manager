@@ -198,6 +198,8 @@
 	:global(.tiptap-editor .ProseMirror) {
 		outline: none;
 		min-height: 8rem;
+		overflow-wrap: break-word;
+		word-break: break-word;
 	}
 	:global(.tiptap-editor .ProseMirror p.is-editor-empty:first-child::before) {
 		color: hsl(var(--muted-foreground) / 0.5);
