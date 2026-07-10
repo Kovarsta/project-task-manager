@@ -36,6 +36,7 @@
 	let status = $state(task.status);
 	let priority = $state(task.priority);
 	let dueDate = $state(task.dueDate?.split('T')[0] ?? '');
+	const today = new Date().toLocaleDateString('en-CA');
 	let assigneeId = $state(String(task.assignee?.id ?? ''));
 	let saving = $state(false);
 	let showDeleteConfirm = $state(false);
@@ -200,7 +201,7 @@
 			<div class="grid grid-cols-2 gap-3">
 				<div onclick={() => dueDateInput?.showPicker?.()} class="cursor-pointer">
 					<label class="mb-1 block text-sm font-medium">Due Date</label>
-					<Input type="date" bind:value={dueDate} bind:ref={dueDateInput} class="cursor-pointer" />
+					<Input type="date" bind:value={dueDate} bind:ref={dueDateInput} class="cursor-pointer" min={today} />
 				</div>
 				<div>
 					<label class="mb-1 block text-sm font-medium">Assignee</label>
