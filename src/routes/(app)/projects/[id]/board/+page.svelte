@@ -169,7 +169,7 @@
 			{#if isAdmin}
 				<button
 					onclick={() => openCreate(col.key)}
-					class="mt-2 rounded-lg bg-cyan-400 py-1.5 text-sm text-muted-foreground text-white hover:bg-cyan-500"
+					class="mt-2 rounded-lg bg-cyan-400 py-1.5 text-sm text-cyan-950 hover:bg-cyan-500"
 				>
 					+ Create
 				</button>
