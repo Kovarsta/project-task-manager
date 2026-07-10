@@ -58,7 +58,7 @@ export async function PATCH(event: RequestEvent) {
 	}
 
 	if (body.description !== undefined) {
-		const rawDesc = String(body.description).trim() || null;
+		const rawDesc = body.description ? String(body.description).trim() : null;
 		const desc = rawDesc ? sanitizeHtml(rawDesc) : null;
 		if (desc) {
 			const charCount = desc.replace(/<[^>]*>/g, '').trim().length;
