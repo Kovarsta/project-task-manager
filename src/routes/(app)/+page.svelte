@@ -30,6 +30,43 @@
 	let newTags = $state<string[]>([]);
 	let creating = $state(false);
 
+	let showConfirmCreateClose = $state(false);
+
+	function hasUnsavedCreate() {
+		return newName.trim() || newDescription || newDeadline || newTags.length;
+	}
+
+	function onInteractOutsideCreate(e: Event) {
+		if (hasUnsavedCreate()) {
+			e.preventDefault();
+			showConfirmCreateClose = true;
+		}
+	}
+
+	function onEscapeKeydownCreate(e: KeyboardEvent) {
+		if (hasUnsavedCreate()) {
+			e.preventDefault();
+			showConfirmCreateClose = true;
+		}
+	}
+
+	function discardCreateAndClose() {
+		newName = '';
+		newDescription = '';
+		newDeadline = '';
+		newTags = [];
+		showConfirmCreateClose = false;
+		showCreate = false;
+	}
+
+	function requestCreateClose() {
+		if (hasUnsavedCreate()) {
+			showConfirmCreateClose = true;
+		} else {
+			showCreate = false;
+		}
+	}
+
 	function stripHtml(html: string) {
 		return html.replace(/<[^>]*>/g, '').trim();
 	}
@@ -240,9 +277,14 @@
 
 <!-- Create Modal -->
 <Dialog.Root bind:open={showCreate}>
-	<Dialog.Content class="max-w-lg">
+	<Dialog.Content class="max-w-lg" showCloseButton={false} onInteractOutside={onInteractOutsideCreate} onEscapeKeydown={onEscapeKeydownCreate}>
 		<Dialog.Header>
-			<Dialog.Title>Create a new project</Dialog.Title>
+			<div class="flex items-center justify-between">
+				<Dialog.Title>Create a new project</Dialog.Title>
+				<button type="button" onclick={requestCreateClose} class="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+				</button>
+			</div>
 		</Dialog.Header>
 		<div class="space-y-4 py-2">
 			<div>
@@ -288,3 +330,16 @@
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+{#if showConfirmCreateClose}
+	<div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40" onclick={() => (showConfirmCreateClose = false)}>
+		<div class="mx-4 w-full max-w-sm rounded-xl bg-popover p-6 text-sm shadow-lg ring-1 ring-foreground/10" onclick={(e) => e.stopPropagation()}>
+			<h3 class="text-base font-semibold text-foreground">Discard changes?</h3>
+			<p class="mt-2 text-muted-foreground">You have unsaved changes. Are you sure you want to discard them?</p>
+			<div class="mt-4 flex gap-2">
+				<Button variant="outline" class="flex-1" onclick={() => (showConfirmCreateClose = false)}>Keep editing</Button>
+				<Button variant="destructive" class="flex-1" onclick={discardCreateAndClose}>Discard</Button>
+			</div>
+		</div>
+	</div>
+{/if}
