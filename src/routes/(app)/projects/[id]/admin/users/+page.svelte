@@ -15,6 +15,7 @@
 	}>();
 
 	const projectId = page.params.id;
+	const currentUserId = $derived(Number(page.data.session?.user?.id));
 
 	let search = $state('');
 	let roleFilter = $state('');
@@ -74,6 +75,10 @@
 	}
 
 	function askRoleChange(member: ProjectMember, newRole: 'ADMIN' | 'MEMBER') {
+		if (member.role === 'ADMIN' && newRole === 'MEMBER' && member.user.id !== currentUserId) {
+			toast.error('You can only demote yourself');
+			return;
+		}
 		confirmRole = { member, newRole };
 		showRoleConfirm = true;
 	}
@@ -230,7 +235,7 @@
 									}}
 								>
 									<option value="ADMIN">Admin</option>
-									<option value="MEMBER">Member</option>
+									<option value="MEMBER" disabled={member.role === 'ADMIN' && member.user.id !== currentUserId}>Member</option>
 								</NativeSelect>
 								{#if member.role !== 'ADMIN'}
 									<Button
