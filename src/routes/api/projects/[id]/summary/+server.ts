@@ -45,7 +45,7 @@ export async function GET(event: RequestEvent) {
 			where: { projectId },
 			include: { user: { select: { id: true, name: true } } },
 			orderBy: { createdAt: 'desc' },
-			take: 10
+			take: 5
 		})
 	]);
 
