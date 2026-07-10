@@ -26,6 +26,7 @@
 	let newName = $state('');
 	let newDescription = $state('');
 	let newDeadline = $state('');
+	const today = new Date().toLocaleDateString('en-CA');
 	let newTags = $state<string[]>([]);
 	let creating = $state(false);
 
@@ -269,7 +270,7 @@
 
 			<div>
 				<label class="mb-1 block text-sm font-medium">Deadline</label>
-				<Input type="date" bind:value={newDeadline} />
+				<Input type="date" bind:value={newDeadline} min={today} />
 			</div>
 
 			<div>

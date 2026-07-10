@@ -33,6 +33,7 @@
 	let status = $state<'TODO' | 'DOING' | 'DONE'>('TODO');
 	let priority = $state('MEDIUM');
 	let dueDate = $state('');
+	const today = new Date().toLocaleDateString('en-CA');
 	let assigneeId = $state('');
 	let creating = $state(false);
 
@@ -180,7 +181,7 @@
 			<div class="grid grid-cols-2 gap-3">
 				<div onclick={() => dueDateInput?.showPicker?.()} class="cursor-pointer">
 					<label class="mb-1 block text-sm font-medium">Due Date</label>
-					<Input type="date" bind:value={dueDate} bind:ref={dueDateInput} class="cursor-pointer" />
+					<Input type="date" bind:value={dueDate} bind:ref={dueDateInput} class="cursor-pointer" min={today} />
 				</div>
 				<div>
 					<label class="mb-1 block text-sm font-medium">Assignee</label>
