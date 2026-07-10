@@ -166,7 +166,7 @@
 	<h2 class="text-xl font-bold">Users</h2>
 	<Button
 		size="sm"
-		class="gap-1 bg-green-500 text-white hover:bg-green-600"
+		class="gap-1 bg-green-500 text-green-950 hover:bg-green-600"
 		onclick={() => (showInvite = true)}
 	>
 		<UserPlus class="h-4 w-4" /> Invite

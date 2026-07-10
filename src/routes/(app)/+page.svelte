@@ -230,7 +230,7 @@
 				</div>
 				<Button
 					size="sm"
-					class="gap-1 bg-green-500 text-white hover:bg-green-600"
+					class="gap-1 bg-green-500 text-green-950 hover:bg-green-600"
 					onclick={() => (showCreate = true)}
 				>
 					<Plus class="h-4 w-4" /> Create

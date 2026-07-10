@@ -235,7 +235,7 @@
 <div class="max-w-lg">
 	<p class="mb-2 text-sm font-medium text-red-500">Danger zone</p>
 	<Button
-		class="w-full bg-red-400 text-white hover:bg-red-500"
+		class="w-full bg-red-400 text-red-950 hover:bg-red-500"
 		onclick={() => { showDeleteConfirm = true; deleteConfirmName = ''; }}
 	>
 		Delete Project
