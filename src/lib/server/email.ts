@@ -64,7 +64,7 @@ export async function sendInviteEmail(to: string, projectName: string, link: str
 
 	try {
 		const result = await resend.emails.send({
-			from: env.EMAIL_FROM_ADDRESS || 'noreply@invite.kovarsta.com',
+			from: env.EMAIL_FROM_ADDRESS || 'onboarding@resend.dev',
 			to,
 			subject: `You've been invited to ${projectName}`,
 			html

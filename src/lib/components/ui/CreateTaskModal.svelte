@@ -87,7 +87,8 @@
 		return html.replace(/<[^>]*>/g, '').trim();
 	}
 
-	async function create() {
+	async function create(e: SubmitEvent) {
+		e.preventDefault();
 		errors = { title: false, description: false };
 		let hasError = false;
 		if (!title.trim()) {
@@ -157,91 +158,93 @@
 			</div>
 		</Dialog.Header>
 
-		<div class="space-y-4">
-			<!-- Title -->
-			<div>
-				<label class="mb-1 block text-sm font-medium"
-					>Name <span class="text-red-500">*</span></label
-				>
-				<Input
-					bind:value={title}
-					disabled={creating}
-					placeholder="Task title..."
-					class={errors.title ? 'border-red-500 focus-visible:ring-red-500' : ''}
-				/>
-				{#if errors.title}
-					<p class="mt-1 text-xs text-red-500">Title is required</p>
-				{/if}
-			</div>
-
-			<!-- Description (rich text) -->
-			<div>
-				<label class="mb-1 block text-sm font-medium">Description</label>
-				<RichTextEditor
-					bind:content={description}
-					disabled={creating}
-					placeholder="Describe the task..."
-				/>
-				{#if errors.description}
-					<p class="mt-1 text-xs text-red-500">
-						Description plain text must be under 2000 characters
-					</p>
-				{/if}
-			</div>
-
-			<!-- Tags -->
-			<div>
-				<label class="mb-1 block text-sm font-medium">Tags</label>
-				<TagInput bind:tags disabled={creating} />
-				<p class="mt-1 text-xs text-muted-foreground/60">
-					e.g. tag1, tag2, tag3... (press Enter or comma to add) · max 10 tags
-				</p>
-			</div>
-
-			<!-- Status / Priority -->
-			<div class="grid grid-cols-2 gap-3">
+		<form onsubmit={create}>
+			<div class="space-y-4">
+				<!-- Title -->
 				<div>
-					<label class="mb-1 block text-sm font-medium">Status</label>
-					<NativeSelect bind:value={status} class="w-full">
-						<option value="TODO">TODO</option>
-						<option value="DOING">DOING</option>
-						<option value="DONE">DONE</option>
-					</NativeSelect>
-				</div>
-				<div>
-					<label class="mb-1 block text-sm font-medium">Priority</label>
-					<NativeSelect bind:value={priority} class="w-full">
-						<option value="LOWEST">Lowest</option>
-						<option value="LOW">Low</option>
-						<option value="MEDIUM">Medium</option>
-						<option value="HIGH">High</option>
-						<option value="HIGHEST">Highest</option>
-					</NativeSelect>
-				</div>
-			</div>
-
-			<!-- Due Date / Assignee -->
-			<div class="grid grid-cols-2 gap-3">
-				<div onclick={() => dueDateInput?.showPicker?.()} class="cursor-pointer">
-					<label class="mb-1 block text-sm font-medium">Due Date</label>
-					<Input type="date" bind:value={dueDate} bind:ref={dueDateInput} class="cursor-pointer" min={today} />
-				</div>
-				<div>
-					<label class="mb-1 block text-sm font-medium">Assignee</label>
-					<UserSearchSelect
-						bind:value={assigneeId}
-						{members}
-						placeholder="Search project members..."
+					<label class="mb-1 block text-sm font-medium"
+						>Name <span class="text-red-500">*</span></label
+					>
+					<Input
+						bind:value={title}
+						disabled={creating}
+						placeholder="Task title..."
+						class={errors.title ? 'border-red-500 focus-visible:ring-red-500' : ''}
 					/>
+					{#if errors.title}
+						<p class="mt-1 text-xs text-red-500">Title is required</p>
+					{/if}
+				</div>
+
+				<!-- Description (rich text) -->
+				<div>
+					<label class="mb-1 block text-sm font-medium">Description</label>
+					<RichTextEditor
+						bind:content={description}
+						disabled={creating}
+						placeholder="Describe the task..."
+					/>
+					{#if errors.description}
+						<p class="mt-1 text-xs text-red-500">
+							Description plain text must be under 2000 characters
+						</p>
+					{/if}
+				</div>
+
+				<!-- Tags -->
+				<div>
+					<label class="mb-1 block text-sm font-medium">Tags</label>
+					<TagInput bind:tags disabled={creating} />
+					<p class="mt-1 text-xs text-muted-foreground/60">
+						e.g. tag1, tag2, tag3... (press Enter or comma to add) · max 10 tags
+					</p>
+				</div>
+
+				<!-- Status / Priority -->
+				<div class="grid grid-cols-2 gap-3">
+					<div>
+						<label class="mb-1 block text-sm font-medium">Status</label>
+						<NativeSelect bind:value={status} class="w-full">
+							<option value="TODO">TODO</option>
+							<option value="DOING">DOING</option>
+							<option value="DONE">DONE</option>
+						</NativeSelect>
+					</div>
+					<div>
+						<label class="mb-1 block text-sm font-medium">Priority</label>
+						<NativeSelect bind:value={priority} class="w-full">
+							<option value="LOWEST">Lowest</option>
+							<option value="LOW">Low</option>
+							<option value="MEDIUM">Medium</option>
+							<option value="HIGH">High</option>
+							<option value="HIGHEST">Highest</option>
+						</NativeSelect>
+					</div>
+				</div>
+
+				<!-- Due Date / Assignee -->
+				<div class="grid grid-cols-2 gap-3">
+					<div onclick={() => dueDateInput?.showPicker?.()} class="cursor-pointer">
+						<label class="mb-1 block text-sm font-medium">Due Date</label>
+						<Input type="date" bind:value={dueDate} bind:ref={dueDateInput} class="cursor-pointer" min={today} />
+					</div>
+					<div>
+						<label class="mb-1 block text-sm font-medium">Assignee</label>
+						<UserSearchSelect
+							bind:value={assigneeId}
+							{members}
+							placeholder="Search project members..."
+						/>
+					</div>
 				</div>
 			</div>
-		</div>
 
-		<Dialog.Footer>
-			<Button class="w-full" onclick={create} disabled={creating}>
-				{creating ? 'Creating...' : 'Create Task'}
-			</Button>
-		</Dialog.Footer>
+			<Dialog.Footer>
+				<Button type="submit" class="w-full" disabled={creating}>
+					{creating ? 'Creating...' : 'Create Task'}
+				</Button>
+			</Dialog.Footer>
+		</form>
 
 		{#if showConfirmClose}
 			<div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onclick={() => (showConfirmClose = false)}>
