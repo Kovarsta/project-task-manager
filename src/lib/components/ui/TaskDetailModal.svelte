@@ -40,21 +40,82 @@
 	let assigneeId = $state(String(task.assignee?.id ?? ''));
 	let saving = $state(false);
 	let showDeleteConfirm = $state(false);
-	let lastTaskId = $state<number | null>(null);
+	let showConfirmClose = $state(false);
+	let wasOpen = $state(false);
+
+	let defaults = $state({
+		title: task.title,
+		description: task.description ?? '',
+		tags: [...(task.tags ?? [])],
+		status: task.status,
+		priority: task.priority,
+		dueDate: task.dueDate?.split('T')[0] ?? '',
+		assigneeId: String(task.assignee?.id ?? '')
+	});
 
 	$effect(() => {
-		if (open && task.id !== lastTaskId) {
-			title = task.title;
-			description = task.description ?? '';
-			tags = task.tags ?? [];
-			status = task.status;
-			priority = task.priority;
-			dueDate = task.dueDate?.split('T')[0] ?? '';
-			assigneeId = String(task.assignee?.id ?? '');
-			lastTaskId = task.id;
+		if (open && !wasOpen) {
+			defaults = {
+				title: task.title,
+				description: task.description ?? '',
+				tags: [...(task.tags ?? [])],
+				status: task.status,
+				priority: task.priority,
+				dueDate: task.dueDate?.split('T')[0] ?? '',
+				assigneeId: String(task.assignee?.id ?? '')
+			};
+			title = defaults.title;
+			description = defaults.description;
+			tags = [...defaults.tags];
+			status = defaults.status;
+			priority = defaults.priority;
+			dueDate = defaults.dueDate;
+			assigneeId = defaults.assigneeId;
+			errors = { title: false, description: false };
 		}
-		errors = { title: false, description: false };
+		wasOpen = open;
 	});
+
+	function hasUnsaved() {
+		return title !== defaults.title || description !== defaults.description ||
+			JSON.stringify(tags) !== JSON.stringify(defaults.tags) ||
+			status !== defaults.status || priority !== defaults.priority ||
+			dueDate !== defaults.dueDate || assigneeId !== defaults.assigneeId;
+	}
+
+	function onInteractOutside(e: Event) {
+		if (hasUnsaved()) {
+			e.preventDefault();
+			showConfirmClose = true;
+		}
+	}
+
+	function onEscapeKeydown(e: KeyboardEvent) {
+		if (hasUnsaved()) {
+			e.preventDefault();
+			showConfirmClose = true;
+		}
+	}
+
+	function discardAndClose() {
+		title = defaults.title;
+		description = defaults.description;
+		tags = [...defaults.tags];
+		status = defaults.status;
+		priority = defaults.priority;
+		dueDate = defaults.dueDate;
+		assigneeId = defaults.assigneeId;
+		showConfirmClose = false;
+		open = false;
+	}
+
+	function requestClose() {
+		if (hasUnsaved()) {
+			showConfirmClose = true;
+		} else {
+			open = false;
+		}
+	}
 
 	// Strip HTML for plain text length check
 	function stripHtml(html: string) {
@@ -130,9 +191,14 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="max-w-2xl">
+	<Dialog.Content class="max-w-2xl" showCloseButton={false} {onInteractOutside} {onEscapeKeydown}>
 		<Dialog.Header>
-			<Dialog.Title>Task Details</Dialog.Title>
+			<div class="flex items-center justify-between">
+				<Dialog.Title>Task Details</Dialog.Title>
+				<button type="button" onclick={requestClose} class="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+				</button>
+			</div>
 		</Dialog.Header>
 
 		<div class="space-y-4">
@@ -235,6 +301,19 @@
 				</Button>
 			{/if}
 		</Dialog.Footer>
+
+		{#if showConfirmClose}
+			<div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onclick={() => (showConfirmClose = false)}>
+				<div class="mx-4 w-full max-w-sm rounded-xl bg-popover p-6 text-sm shadow-lg ring-1 ring-foreground/10" onclick={(e) => e.stopPropagation()}>
+					<h3 class="text-base font-semibold text-foreground">Discard changes?</h3>
+					<p class="mt-2 text-muted-foreground">You have unsaved changes. Are you sure you want to discard them?</p>
+					<div class="mt-4 flex gap-2">
+						<Button variant="outline" class="flex-1" onclick={() => (showConfirmClose = false)}>Keep editing</Button>
+						<Button variant="destructive" class="flex-1" onclick={discardAndClose}>Discard</Button>
+					</div>
+				</div>
+			</div>
+		{/if}
 	</Dialog.Content>
 </Dialog.Root>
 
