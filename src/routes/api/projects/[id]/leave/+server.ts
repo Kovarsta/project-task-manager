@@ -26,20 +26,14 @@ export async function POST(event: RequestEvent) {
 		}
 	}
 
-	await prisma.$transaction([
-		prisma.task.updateMany({
-			where: { projectId, assigneeId: user.id },
-			data: { assigneeId: null }
-		}),
-		prisma.projectMember.delete({
-			where: {
-				projectId_userId: {
-					projectId,
-					userId: user.id
-				}
+	await prisma.projectMember.delete({
+		where: {
+			projectId_userId: {
+				projectId,
+				userId: user.id
 			}
-		})
-	]);
+		}
+	});
 
 	return json({ success: true });
 }
