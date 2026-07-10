@@ -196,46 +196,46 @@
 
 <div class="flex h-full flex-col p-6">
 	<div class="flex-1">
-		<div class="mb-4">
-			<div class="relative max-w-md">
+		<div class="mb-6 max-w-md space-y-3">
+			<div class="relative">
 				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 				<Input
 					value={search}
 					oninput={(e: Event) => onSearchInput((e.target as HTMLInputElement).value)}
-					placeholder="Search"
+					placeholder="Search by name or tags..."
 					class="pl-9"
 					onkeydown={(e: KeyboardEvent) => e.key === ' ' && search === '' && e.preventDefault()}
 				/>
 			</div>
-		</div>
-		<div class="mb-6 flex items-center gap-3">
-			<div class="flex items-center gap-1">
-				<span class="mr-1 text-xs text-muted-foreground">Sort by:</span>
-				{#each [['createdAt', 'Date'], ['name', 'Name'], ['status', 'Status'], ['tasks', 'Tasks'], ['attention', 'Attention']] as [field, label] (field)}
-					<Button
-						variant={sortField === field ? 'secondary' : 'ghost'}
-						size="sm"
-						class="h-8 gap-1 text-xs"
-						onclick={() => handleSortClick(field as any)}
-					>
-						{label}
-						{#if sortField === field}
-							{#if sortDir === 'asc'}
-								<ArrowUp class="h-3.5 w-3.5" />
-							{:else}
-								<ArrowDown class="h-3.5 w-3.5" />
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-1">
+					<span class="mr-1 text-xs text-muted-foreground">Sort by:</span>
+					{#each [['createdAt', 'Date'], ['name', 'Name'], ['status', 'Status'], ['tasks', 'Tasks'], ['attention', 'Attention']] as [field, label] (field)}
+						<Button
+							variant={sortField === field ? 'secondary' : 'ghost'}
+							size="sm"
+							class="h-8 gap-1 text-xs"
+							onclick={() => handleSortClick(field as any)}
+						>
+							{label}
+							{#if sortField === field}
+								{#if sortDir === 'asc'}
+									<ArrowUp class="h-3.5 w-3.5" />
+								{:else}
+									<ArrowDown class="h-3.5 w-3.5" />
+								{/if}
 							{/if}
-						{/if}
-					</Button>
-				{/each}
+						</Button>
+					{/each}
+				</div>
+				<Button
+					size="sm"
+					class="gap-1 bg-green-500 text-white hover:bg-green-600"
+					onclick={() => (showCreate = true)}
+				>
+					<Plus class="h-4 w-4" /> Create
+				</Button>
 			</div>
-			<Button
-				size="sm"
-				class="gap-1 bg-green-500 text-white hover:bg-green-600"
-				onclick={() => (showCreate = true)}
-			>
-				<Plus class="h-4 w-4" /> Create
-			</Button>
 		</div>
 
 		{#if activeTab === 'my'}

@@ -116,7 +116,7 @@
 			<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 			<Input
 				bind:value={search}
-				placeholder="Search title, assignee, due date, or tag..."
+				placeholder="Search by name, assignee, due date, or tags..."
 				class="pl-9"
 				onkeydown={(e: KeyboardEvent) => e.key === ' ' && search === '' && e.preventDefault()}
 			/>
