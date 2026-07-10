@@ -105,18 +105,6 @@
 		goto(`?${params}`, { keepFocus: true });
 	}
 
-	function stripHtml(html: string) {
-		return html.replace(/<[^>]*>/g, '').trim();
-	}
-
-	function descriptionPreview(html: string | null) {
-		if (!html) return null;
-		const text = stripHtml(html);
-		if (!text) return null;
-		if (text.length <= 60) return text;
-		return text.slice(0, 60) + '...';
-	}
-
 	function shortDate(dateStr: string) {
 		return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 	}
@@ -221,8 +209,8 @@
 									</span>
 								</div>
 								{#if project.description}
-									<div class="mt-1 text-xs text-muted-foreground/70">
-										{descriptionPreview(project.description)}
+									<div class="mt-1 line-clamp-2 text-xs text-muted-foreground/70 [&_a]:text-blue-500 [&_a]:underline">
+										{@html project.description}
 									</div>
 								{/if}
 								{#if project.tags && project.tags.length > 0}
