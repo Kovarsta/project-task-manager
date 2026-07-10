@@ -57,6 +57,19 @@ export async function POST(event: RequestEvent) {
 		throw error(400, 'User is already a member of this project');
 	}
 
+	const existingInvite = await prisma.projectInvite.findFirst({
+		where: {
+			projectId,
+			invitedEmail: email,
+			status: 'PENDING',
+			expiresAt: { gt: new Date() }
+		}
+	});
+
+	if (existingInvite) {
+		throw error(400, 'An invitation has already been sent to this email');
+	}
+
 	// Create invite, expires in 7 days
 	const expiresAt = new Date();
 	expiresAt.setDate(expiresAt.getDate() + 7);
