@@ -1,10 +1,18 @@
-import type { PageServerLoad } from '../$types';
+import type { PageServerLoad } from './$types';
 import { serverFetch } from '$lib/server/api';
 
 export const load: PageServerLoad = async (event) => {
-	const [members, invites] = await Promise.all([
-		serverFetch(event, `/api/projects/${event.params.id}/members`),
+	const page = Number(event.url.searchParams.get('page') ?? 1);
+	const limit = Number(event.url.searchParams.get('limit') ?? 20);
+
+	const [membersRes, invites] = await Promise.all([
+		serverFetch(event, `/api/projects/${event.params.id}/members?page=${page}&limit=${limit}`),
 		serverFetch(event, `/api/projects/${event.params.id}/invites`)
 	]);
-	return { members, invites };
+
+	return {
+		members: membersRes.members,
+		meta: membersRes.meta,
+		invites
+	};
 };

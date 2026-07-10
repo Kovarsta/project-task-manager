@@ -1,17 +1,22 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { UserPlus, Trash2, X, Calendar, ListTodo } from '@lucide/svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import Pagination from '$lib/components/ui/Pagination.svelte';
 	import type { ProjectMember, Invite } from '$lib/type';
 	import UserSearchSelect from '$lib/components/ui/UserSearchSelect.svelte';
 	import NativeSelect from '$lib/components/ui/NativeSelect.svelte';
 
 	let { data } = $props<{
-		data: { members: ProjectMember[]; invites: Invite[] };
+		data: {
+			members: ProjectMember[];
+			meta: { page: number; limit: number; total: number; totalPages: number; adminCount: number };
+			invites: Invite[];
+		};
 	}>();
 
 	const projectId = page.params.id;
@@ -29,6 +34,13 @@
 	let confirmRole = $state<{ member: ProjectMember; newRole: 'ADMIN' | 'MEMBER' } | null>(null);
 	let showRoleConfirm = $state(false);
 
+	let currentPage = $state(data.meta.page);
+	let limit = $state(data.meta.limit);
+
+	function reload() {
+		goto(`?page=${currentPage}&limit=${limit}`, { keepFocus: true });
+	}
+
 	let pendingInvites = $derived(data.invites.filter((i: Invite) => i.status === 'PENDING'));
 	let acceptedMembers = $derived(
 		data.members.filter((m: ProjectMember) => {
@@ -40,10 +52,8 @@
 		})
 	);
 
-	const totalMembers = $derived(data.members.length);
-	const adminCount = $derived(
-		data.members.filter((m: ProjectMember) => m.role === 'ADMIN' || m.isOwner).length
-	);
+	const totalMembers = $derived(data.meta.total);
+	const adminCount = $derived(data.meta.adminCount);
 
 	async function sendInvite(e: Event) {
 		e.preventDefault();
@@ -281,6 +291,8 @@
 		</tbody>
 	</table>
 </div>
+
+<Pagination bind:page={currentPage} bind:limit totalPages={data.meta.totalPages} onChange={reload} />
 
 <!-- Invite modal -->
 <Dialog.Root bind:open={showInvite}>
