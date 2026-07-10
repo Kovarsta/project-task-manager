@@ -55,7 +55,7 @@ List project members with user data, ordered by join date, each with assigned ta
 Search users to invite. Accepts `?q=` (min 2 chars), returns up to 5 active matching users.
 
 ### `PATCH /api/projects/[id]/members/[userId]`
-Change a member's role (`ADMIN`/`MEMBER`). Requires admin. Cannot change the owner's role. Admins can only demote themselves — demoting another admin returns `403`.
+Change a member's role (`ADMIN`/`MEMBER`). Requires admin. Cannot change the owner's role. Admins can only demote themselves - demoting another admin returns `403`.
 
 ### `DELETE /api/projects/[id]/members/[userId]`
 Remove a member. Requires admin. Cannot remove owner, last admin, or yourself (use `/leave`).
@@ -118,7 +118,7 @@ Alternate accept path. Same as `POST /api/invites/[token]` but also logs `member
 
 ---
 
-## Admin — Projects
+## Admin - Projects
 
 ### `GET /api/admin/projects`
 List all projects (super admin). Supports `?page=`, `?limit=`, `?q=`.
@@ -128,7 +128,7 @@ Deactivate or reactivate a project. Accepts `{ action: "deactivate" | "reactivat
 
 ---
 
-## Admin — Users
+## Admin - Users
 
 ### `GET /api/admin/users`
 List all users (super admin). Supports `?page=`, `?limit=`, `?q=`.

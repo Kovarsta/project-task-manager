@@ -241,7 +241,7 @@
 					<td class="px-4 py-3">
 						<div class="flex flex-col items-start gap-1.5">
 							{#if member.isOwner}
-								<span class="text-xs text-muted-foreground">Owner — cannot modify</span>
+								<span class="text-xs text-muted-foreground">Owner - cannot modify</span>
 							{:else}
 								<NativeSelect
 									value={member.role}
