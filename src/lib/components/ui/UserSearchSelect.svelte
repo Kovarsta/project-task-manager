@@ -51,7 +51,9 @@
 	}
 
 	function onInput() {
-		if (!members) {
+		if (members) {
+			if (!query.trim()) value = '';
+		} else {
 			value = query;
 		}
 
