@@ -196,7 +196,7 @@
 
 <div class="flex h-full flex-col p-6">
 	<div class="flex-1">
-		<div class="mb-6 max-w-md space-y-3">
+		<div class="mb-6 space-y-3">
 			<div class="relative">
 				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 				<Input

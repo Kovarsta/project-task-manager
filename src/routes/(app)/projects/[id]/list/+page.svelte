@@ -112,7 +112,7 @@
 <div class="flex h-full flex-col">
 	<div class="flex-1 overflow-y-auto">
 		<!-- Search -->
-		<div class="relative mb-4 max-w-md">
+		<div class="relative mb-4">
 			<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 			<Input
 				bind:value={search}
