@@ -83,6 +83,9 @@ export async function PATCH(event: RequestEvent) {
 	if (target.isOwner) throw error(403, 'Cannot change the project owner role');
 
 	if (target.role === 'ADMIN' && body.role === 'MEMBER') {
+		if (user.id !== targetId) {
+			throw error(403, 'You can only demote yourself');
+		}
 		const adminCount = await prisma.projectMember.count({
 			where: { projectId, OR: [{ role: 'ADMIN' }, { isOwner: true }] }
 		});
