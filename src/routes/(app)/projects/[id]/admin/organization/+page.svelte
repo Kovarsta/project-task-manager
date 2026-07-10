@@ -62,6 +62,7 @@
 	let tags = $state<string[]>(data.project.tags ?? []);
 	let saving = $state(false);
 	let nameError = $state(false);
+	let deleteConfirmName = $state('');
 
 	function stripHtml(html: string) {
 		return html.replace(/<[^>]*>/g, '').trim();
@@ -235,7 +236,7 @@
 	<p class="mb-2 text-sm font-medium text-red-500">Danger zone</p>
 	<Button
 		class="w-full bg-red-400 text-white hover:bg-red-500"
-		onclick={() => (showDeleteConfirm = true)}
+		onclick={() => { showDeleteConfirm = true; deleteConfirmName = ''; }}
 	>
 		Delete Project
 	</Button>
@@ -263,21 +264,24 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<Dialog.Root bind:open={showDeleteConfirm}>
+<Dialog.Root bind:open={showDeleteConfirm} onOpenChange={(o) => { if (!o) deleteConfirmName = ''; }}>
 	<Dialog.Content class="max-w-sm">
 		<Dialog.Header>
 			<Dialog.Title>Delete this project?</Dialog.Title>
 		</Dialog.Header>
-		<p class="text-sm text-muted-foreground">
+		<p class="mb-4 text-sm text-muted-foreground">
 			This will permanently delete the project, all tasks, members, and invites. This cannot be
-			undone.
+			undone. Type <strong>{data.project.name}</strong> to confirm.
 		</p>
-		<Dialog.Footer class="gap-2">
+		<Input bind:value={deleteConfirmName} placeholder={data.project.name} />
+		<Dialog.Footer class="mt-4 gap-2">
 			<Button variant="outline" class="flex-1" onclick={() => (showDeleteConfirm = false)}
 				>Cancel</Button
 			>
-			<Button class="flex-1 bg-red-500 text-white hover:bg-red-600" onclick={deleteProject}
-				>Delete</Button
+			<Button
+				class="flex-1 bg-red-500 text-white hover:bg-red-600"
+				disabled={deleteConfirmName !== data.project.name}
+				onclick={deleteProject}>Delete</Button
 			>
 		</Dialog.Footer>
 	</Dialog.Content>
