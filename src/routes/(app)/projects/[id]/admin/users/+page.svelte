@@ -14,7 +14,7 @@
 	let { data } = $props<{
 		data: {
 			members: ProjectMember[];
-			meta: { page: number; limit: number; total: number; totalPages: number; adminCount: number };
+			meta: { page: number; limit: number; total: number; totalPages: number; memberCount: number; adminCount: number };
 			invites: Invite[];
 		};
 	}>();
@@ -22,8 +22,8 @@
 	const projectId = page.params.id;
 	const currentUserId = $derived(Number(page.data.session?.user?.id));
 
-	let search = $state('');
-	let roleFilter = $state('');
+	let search = $state(page.url.searchParams.get('q') ?? '');
+	let roleFilter = $state(page.url.searchParams.get('role') ?? '');
 	let showInvite = $state(false);
 	let inviteEmail = $state('');
 	let inviting = $state(false);
@@ -37,22 +37,31 @@
 	let currentPage = $state(data.meta.page);
 	let limit = $state(data.meta.limit);
 
+	let searchTimer: ReturnType<typeof setTimeout>;
+	function onSearchInput() {
+		clearTimeout(searchTimer);
+		searchTimer = setTimeout(() => {
+			currentPage = 1;
+			reload();
+		}, 300);
+	}
+	function onRoleChange() {
+		currentPage = 1;
+		reload();
+	}
+
 	function reload() {
-		goto(`?page=${currentPage}&limit=${limit}`, { keepFocus: true });
+		const params = new URLSearchParams();
+		params.set('page', String(currentPage));
+		params.set('limit', String(limit));
+		if (search.trim()) params.set('q', search.trim());
+		if (roleFilter) params.set('role', roleFilter);
+		goto(`?${params}`, { keepFocus: true });
 	}
 
 	let pendingInvites = $derived(data.invites.filter((i: Invite) => i.status === 'PENDING'));
-	let acceptedMembers = $derived(
-		data.members.filter((m: ProjectMember) => {
-			const matchSearch =
-				m.user.name.toLowerCase().includes(search.toLowerCase()) ||
-				m.user.email.toLowerCase().includes(search.toLowerCase());
-			const matchRole = !roleFilter || m.role === roleFilter;
-			return matchSearch && matchRole;
-		})
-	);
 
-	const totalMembers = $derived(data.meta.total);
+	const totalMembers = $derived(data.meta.memberCount);
 	const adminCount = $derived(data.meta.adminCount);
 
 	async function sendInvite(e: Event) {
@@ -178,8 +187,8 @@
 
 <!-- Search + filter -->
 <div class="mb-4 flex gap-3">
-	<Input bind:value={search} placeholder="Search" class="max-w-sm" />
-	<NativeSelect bind:value={roleFilter}>
+	<Input bind:value={search} oninput={onSearchInput} placeholder="Search" class="max-w-sm" />
+	<NativeSelect bind:value={roleFilter} onchange={onRoleChange}>
 		<option value="">All roles</option>
 		<option value="ADMIN">Admin</option>
 		<option value="MEMBER">Member</option>
@@ -196,7 +205,7 @@
 			</tr>
 		</thead>
 		<tbody>
-			{#each acceptedMembers as member (member.id)}
+			{#each data.members as member (member.id)}
 				<tr class="border-t">
 					<td class="px-4 py-3">
 						<div class="flex items-center gap-2">
