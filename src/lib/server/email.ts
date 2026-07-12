@@ -1,7 +1,11 @@
 import { Resend } from 'resend';
 import { env } from '$env/dynamic/private';
 
-const resend = new Resend(env.RESEND_API_KEY);
+let _resend: Resend;
+function getResend() {
+	if (!_resend) _resend = new Resend(env.RESEND_API_KEY);
+	return _resend;
+}
 
 export async function sendInviteEmail(to: string, projectName: string, link: string) {
 	const html = `<!DOCTYPE html>
@@ -63,7 +67,7 @@ export async function sendInviteEmail(to: string, projectName: string, link: str
 </html>`;
 
 	try {
-		const result = await resend.emails.send({
+		const result = await getResend().emails.send({
 			from: env.EMAIL_FROM_ADDRESS || 'onboarding@resend.dev',
 			to,
 			subject: `You've been invited to ${projectName}`,

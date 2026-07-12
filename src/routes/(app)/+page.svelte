@@ -14,8 +14,8 @@
 	import Pagination from '$lib/components/ui/Pagination.svelte';
 
 	let { data } = $props();
-	let currentPage = $state(data.meta.page);
-	let limit = $state(data.meta.limit);
+	let currentPage = $state(1);
+	let limit = $state(10);
 	let errors = $state({ title: false, description: false });
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -83,6 +83,11 @@
 			goto(`?${params}`, { keepFocus: true, replaceState: true });
 		}, 300);
 	}
+
+	$effect(() => {
+		currentPage = data.meta.page;
+		limit = data.meta.limit;
+	});
 
 	const descChars = $derived(stripHtml(newDescription).length);
 
@@ -281,17 +286,18 @@
 		<Dialog.Header>
 			<div class="flex items-center justify-between">
 				<Dialog.Title>Create a new project</Dialog.Title>
-				<button type="button" onclick={requestCreateClose} class="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+				<button type="button" aria-label="Close" onclick={requestCreateClose} class="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
 				</button>
 			</div>
 		</Dialog.Header>
 		<div class="space-y-4 py-2">
 			<div>
-				<label class="mb-1 block text-sm font-medium"
+				<label for="cp-name" class="mb-1 block text-sm font-medium"
 					>Name <span class="text-red-500">*</span></label
 				>
 				<Input
+					id="cp-name"
 					bind:value={newName}
 					placeholder="Bakery shop, eventing setup..."
 					onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && createProject()}
@@ -303,21 +309,25 @@
 			</div>
 
 			<div>
-				<label class="mb-1 block text-sm font-medium">Description</label>
-				<RichTextEditor bind:content={newDescription} placeholder="Describe the project..." />
+				<label class="mb-1 block text-sm font-medium">
+					Description
+					<RichTextEditor bind:content={newDescription} placeholder="Describe the project..." />
+				</label>
 				<p class="mt-1 text-xs {descChars > 60 ? 'text-red-500' : 'text-muted-foreground/60'}">
 					{descChars}/60 characters
 				</p>
 			</div>
 
 			<div>
-				<label class="mb-1 block text-sm font-medium">Deadline</label>
-				<Input type="date" bind:value={newDeadline} min={today} />
+				<label for="cp-deadline" class="mb-1 block text-sm font-medium">Deadline</label>
+				<Input id="cp-deadline" type="date" bind:value={newDeadline} min={today} />
 			</div>
 
 			<div>
-				<label class="mb-1 block text-sm font-medium">Tags</label>
-				<TagInput bind:tags={newTags} />
+				<label class="mb-1 block text-sm font-medium">
+					Tags
+					<TagInput bind:tags={newTags} />
+				</label>
 				<p class="mt-1 text-xs text-muted-foreground/60">
 					e.g. tag1, tag2, tag3... (press Enter or comma to add) · max 10 tags
 				</p>
@@ -330,8 +340,9 @@
 		</Dialog.Footer>
 
 		{#if showConfirmCreateClose}
-			<div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onclick={() => (showConfirmCreateClose = false)}>
-				<div class="mx-4 w-full max-w-sm rounded-xl bg-popover p-6 text-sm shadow-lg ring-1 ring-foreground/10" onclick={(e) => e.stopPropagation()}>
+			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+			<div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onclick={() => (showConfirmCreateClose = false)} onkeydown={(e) => e.key === 'Escape' && (showConfirmCreateClose = false)} role="presentation">
+				<div tabindex="-1" class="mx-4 w-full max-w-sm rounded-xl bg-popover p-6 text-sm shadow-lg ring-1 ring-foreground/10" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog">
 					<h3 class="text-base font-semibold text-foreground">Discard changes?</h3>
 					<p class="mt-2 text-muted-foreground">You have unsaved changes. Are you sure you want to discard them?</p>
 					<div class="mt-4 flex gap-2">

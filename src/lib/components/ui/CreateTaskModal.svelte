@@ -152,7 +152,7 @@
 		<Dialog.Header>
 			<div class="flex items-center justify-between">
 				<Dialog.Title>Create Task</Dialog.Title>
-				<button type="button" onclick={requestClose} class="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+				<button type="button" aria-label="Close" onclick={requestClose} class="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
 				</button>
 			</div>
@@ -162,10 +162,11 @@
 			<div class="space-y-4">
 				<!-- Title -->
 				<div>
-					<label class="mb-1 block text-sm font-medium"
+					<label for="ct-title" class="mb-1 block text-sm font-medium"
 						>Name <span class="text-red-500">*</span></label
 					>
 					<Input
+						id="ct-title"
 						bind:value={title}
 						disabled={creating}
 						placeholder="Task title..."
@@ -178,12 +179,14 @@
 
 				<!-- Description (rich text) -->
 				<div>
-					<label class="mb-1 block text-sm font-medium">Description</label>
-					<RichTextEditor
-						bind:content={description}
-						disabled={creating}
-						placeholder="Describe the task..."
-					/>
+					<label class="mb-1 block text-sm font-medium">
+						Description
+						<RichTextEditor
+							bind:content={description}
+							disabled={creating}
+							placeholder="Describe the task..."
+						/>
+					</label>
 					{#if errors.description}
 						<p class="mt-1 text-xs text-red-500">
 							Description plain text must be under 2000 characters
@@ -193,8 +196,10 @@
 
 				<!-- Tags -->
 				<div>
-					<label class="mb-1 block text-sm font-medium">Tags</label>
-					<TagInput bind:tags disabled={creating} />
+					<label class="mb-1 block text-sm font-medium">
+						Tags
+						<TagInput bind:tags disabled={creating} />
+					</label>
 					<p class="mt-1 text-xs text-muted-foreground/60">
 						e.g. tag1, tag2, tag3... (press Enter or comma to add) · max 10 tags
 					</p>
@@ -203,16 +208,16 @@
 				<!-- Status / Priority -->
 				<div class="grid grid-cols-2 gap-3">
 					<div>
-						<label class="mb-1 block text-sm font-medium">Status</label>
-						<NativeSelect bind:value={status} class="w-full">
+						<label for="ct-status" class="mb-1 block text-sm font-medium">Status</label>
+						<NativeSelect id="ct-status" bind:value={status} class="w-full">
 							<option value="TODO">TODO</option>
 							<option value="DOING">DOING</option>
 							<option value="DONE">DONE</option>
 						</NativeSelect>
 					</div>
 					<div>
-						<label class="mb-1 block text-sm font-medium">Priority</label>
-						<NativeSelect bind:value={priority} class="w-full">
+						<label for="ct-priority" class="mb-1 block text-sm font-medium">Priority</label>
+						<NativeSelect id="ct-priority" bind:value={priority} class="w-full">
 							<option value="LOWEST">Lowest</option>
 							<option value="LOW">Low</option>
 							<option value="MEDIUM">Medium</option>
@@ -224,17 +229,25 @@
 
 				<!-- Due Date / Assignee -->
 				<div class="grid grid-cols-2 gap-3">
-					<div onclick={() => dueDateInput?.showPicker?.()} class="cursor-pointer">
-						<label class="mb-1 block text-sm font-medium">Due Date</label>
-						<Input type="date" bind:value={dueDate} bind:ref={dueDateInput} class="cursor-pointer" min={today} />
+					<div
+						onclick={() => dueDateInput?.showPicker?.()}
+						onkeydown={(e) => e.key === 'Enter' && dueDateInput?.showPicker?.()}
+						role="button"
+						tabindex="0"
+						class="cursor-pointer"
+					>
+						<label for="ct-dueDate" class="mb-1 block text-sm font-medium">Due Date</label>
+						<Input id="ct-dueDate" type="date" bind:value={dueDate} bind:ref={dueDateInput} class="cursor-pointer" min={today} />
 					</div>
 					<div>
-						<label class="mb-1 block text-sm font-medium">Assignee</label>
-						<UserSearchSelect
-							bind:value={assigneeId}
-							{members}
-							placeholder="Search project members..."
-						/>
+						<label class="mb-1 block text-sm font-medium">
+							Assignee
+							<UserSearchSelect
+								bind:value={assigneeId}
+								{members}
+								placeholder="Search project members..."
+							/>
+						</label>
 					</div>
 				</div>
 			</div>
@@ -247,8 +260,9 @@
 		</form>
 
 		{#if showConfirmClose}
-			<div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onclick={() => (showConfirmClose = false)}>
-				<div class="mx-4 w-full max-w-sm rounded-xl bg-popover p-6 text-sm shadow-lg ring-1 ring-foreground/10" onclick={(e) => e.stopPropagation()}>
+			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+			<div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onclick={() => (showConfirmClose = false)} onkeydown={(e) => e.key === 'Escape' && (showConfirmClose = false)} role="presentation">
+				<div tabindex="-1" class="mx-4 w-full max-w-sm rounded-xl bg-popover p-6 text-sm shadow-lg ring-1 ring-foreground/10" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog">
 					<h3 class="text-base font-semibold text-foreground">Discard changes?</h3>
 					<p class="mt-2 text-muted-foreground">You have unsaved changes. Are you sure you want to discard them?</p>
 					<div class="mt-4 flex gap-2">

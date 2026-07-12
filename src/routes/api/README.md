@@ -138,4 +138,4 @@ Update a user's super admin status or deactivate/reactivate them. Cannot demote 
 
 ---
 
-**Total: 13 GET · 8 POST · 5 PATCH · 4 DELETE**
+**Total: 14 GET · 7 POST · 5 PATCH · 4 DELETE**

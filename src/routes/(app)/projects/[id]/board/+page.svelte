@@ -117,6 +117,8 @@
 	{#each columns as col (col.key)}
 		<div
 			class="flex min-w-0 flex-1 flex-col rounded-xl bg-muted/40 p-3"
+			role="region"
+			aria-label="{col.label} column"
 			ondragover={(e) => e.preventDefault()}
 			ondrop={() => onDrop(col.key)}
 		>
