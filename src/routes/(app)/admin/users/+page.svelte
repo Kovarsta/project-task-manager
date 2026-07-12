@@ -16,9 +16,9 @@
 		};
 	}>();
 
-	let search = $state(data.q);
-	let currentPage = $state(data.meta.page);
-	let limit = $state(data.meta.limit);
+	let search = $state('');
+	let currentPage = $state(1);
+	let limit = $state(10);
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 	let sortField = $state<'name' | 'role' | 'status' | 'created'>('name');

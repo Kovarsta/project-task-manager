@@ -34,10 +34,16 @@
 	let confirmRole = $state<{ member: ProjectMember; newRole: 'ADMIN' | 'MEMBER' } | null>(null);
 	let showRoleConfirm = $state(false);
 
-	let currentPage = $state(data.meta.page);
-	let limit = $state(data.meta.limit);
+	let currentPage = $state(1);
+	let limit = $state(10);
 
 	let searchTimer: ReturnType<typeof setTimeout>;
+
+	$effect(() => {
+		currentPage = data.meta.page;
+		limit = data.meta.limit;
+	});
+
 	function onSearchInput() {
 		clearTimeout(searchTimer);
 		searchTimer = setTimeout(() => {

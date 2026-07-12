@@ -30,27 +30,27 @@
 		onUpdate: () => void;
 	} = $props();
 
-	let title = $state(task.title);
-	let description = $state(task.description ?? '');
-	let tags = $state<string[]>(task.tags ?? []);
-	let status = $state(task.status);
-	let priority = $state(task.priority);
-	let dueDate = $state(task.dueDate?.split('T')[0] ?? '');
+	let title = $state('');
+	let description = $state('');
+	let tags = $state<string[]>([]);
+	let status = $state('TODO');
+	let priority = $state('LOWEST');
+	let dueDate = $state('');
 	const today = new Date().toLocaleDateString('en-CA');
-	let assigneeId = $state(String(task.assignee?.id ?? ''));
+	let assigneeId = $state('');
 	let saving = $state(false);
 	let showDeleteConfirm = $state(false);
 	let showConfirmClose = $state(false);
 	let wasOpen = $state(false);
 
 	let defaults = $state({
-		title: task.title,
-		description: task.description ?? '',
-		tags: [...(task.tags ?? [])],
-		status: task.status,
-		priority: task.priority,
-		dueDate: task.dueDate?.split('T')[0] ?? '',
-		assigneeId: String(task.assignee?.id ?? '')
+		title: '',
+		description: '',
+		tags: [] as string[],
+		status: 'TODO',
+		priority: 'LOWEST',
+		dueDate: '',
+		assigneeId: ''
 	});
 
 	$effect(() => {
@@ -195,7 +195,7 @@
 		<Dialog.Header>
 			<div class="flex items-center justify-between">
 				<Dialog.Title>Task Details</Dialog.Title>
-				<button type="button" onclick={requestClose} class="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+				<button type="button" aria-label="Close" onclick={requestClose} class="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
 				</button>
 			</div>
@@ -204,10 +204,11 @@
 		<div class="space-y-4">
 			<!-- Title -->
 			<div>
-				<label class="mb-1 block text-sm font-medium"
+				<label for="td-title" class="mb-1 block text-sm font-medium"
 					>Name <span class="text-red-500">*</span></label
 				>
 				<Input
+					id="td-title"
 					bind:value={title}
 					disabled={saving}
 					class={errors.title ? 'border-red-500 focus-visible:ring-red-500' : ''}
@@ -219,12 +220,14 @@
 
 			<!-- Description (rich text) -->
 			<div>
-				<label class="mb-1 block text-sm font-medium">Description</label>
-				<RichTextEditor
-					bind:content={description}
-					disabled={saving}
-					placeholder="Describe the task..."
-				/>
+				<label class="mb-1 block text-sm font-medium">
+					Description
+					<RichTextEditor
+						bind:content={description}
+						disabled={saving}
+						placeholder="Describe the task..."
+					/>
+				</label>
 				{#if errors.description}
 					<p class="mt-1 text-xs text-red-500">
 						Description plain text must be under 2000 characters
@@ -234,8 +237,10 @@
 
 			<!-- Tags -->
 			<div>
-				<label class="mb-1 block text-sm font-medium">Tags</label>
-				<TagInput bind:tags disabled={saving} />
+				<label class="mb-1 block text-sm font-medium">
+					Tags
+					<TagInput bind:tags disabled={saving} />
+				</label>
 				<p class="mt-1 text-xs text-muted-foreground/60">
 					e.g. tag1, tag2, tag3... (press Enter or comma to add) · max 10 tags
 				</p>
@@ -244,16 +249,16 @@
 			<!-- Status / Priority -->
 			<div class="grid grid-cols-2 gap-3">
 				<div>
-					<label class="mb-1 block text-sm font-medium">Status</label>
-					<NativeSelect bind:value={status} class="w-full">
+					<label for="td-status" class="mb-1 block text-sm font-medium">Status</label>
+					<NativeSelect id="td-status" bind:value={status} class="w-full">
 						<option value="TODO">TODO</option>
 						<option value="DOING">DOING</option>
 						<option value="DONE">DONE</option>
 					</NativeSelect>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium">Priority</label>
-					<NativeSelect bind:value={priority} class="w-full">
+					<label for="td-priority" class="mb-1 block text-sm font-medium">Priority</label>
+					<NativeSelect id="td-priority" bind:value={priority} class="w-full">
 						<option value="LOWEST">Lowest</option>
 						<option value="LOW">Low</option>
 						<option value="MEDIUM">Medium</option>
@@ -265,20 +270,29 @@
 
 			<!-- Due Date / Assignee -->
 			<div class="grid grid-cols-2 gap-3">
-				<div onclick={() => dueDateInput?.showPicker?.()} class="cursor-pointer">
-					<label class="mb-1 block text-sm font-medium">Due Date</label>
-					<Input type="date" bind:value={dueDate} bind:ref={dueDateInput} class="cursor-pointer" min={today} />
+				<div
+					onclick={() => dueDateInput?.showPicker?.()}
+					onkeydown={(e) => e.key === 'Enter' && dueDateInput?.showPicker?.()}
+					role="button"
+					tabindex="0"
+					class="cursor-pointer"
+				>
+					<label for="td-dueDate" class="mb-1 block text-sm font-medium">Due Date</label>
+					<Input id="td-dueDate" type="date" bind:value={dueDate} bind:ref={dueDateInput} class="cursor-pointer" min={today} />
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium">Assignee</label>
-					{#if isAdmin}
-						<UserSearchSelect
-							bind:value={assigneeId}
-							{members}
-							currentAssignee={task.assignee}
-							placeholder="Search project members..."
-						/>
-					{:else}
+					<label class="mb-1 block text-sm font-medium">
+						Assignee
+						{#if isAdmin}
+							<UserSearchSelect
+								bind:value={assigneeId}
+								{members}
+								currentAssignee={task.assignee}
+								placeholder="Search project members..."
+							/>
+						{/if}
+					</label>
+					{#if !isAdmin}
 						<Input value={task.assignee?.name ?? 'Unassigned'} disabled />
 					{/if}
 				</div>
@@ -304,8 +318,9 @@
 		</Dialog.Footer>
 
 		{#if showConfirmClose}
-			<div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onclick={() => (showConfirmClose = false)}>
-				<div class="mx-4 w-full max-w-sm rounded-xl bg-popover p-6 text-sm shadow-lg ring-1 ring-foreground/10" onclick={(e) => e.stopPropagation()}>
+			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+			<div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onclick={() => (showConfirmClose = false)} onkeydown={(e) => e.key === 'Escape' && (showConfirmClose = false)} role="presentation">
+				<div tabindex="-1" class="mx-4 w-full max-w-sm rounded-xl bg-popover p-6 text-sm shadow-lg ring-1 ring-foreground/10" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog">
 					<h3 class="text-base font-semibold text-foreground">Discard changes?</h3>
 					<p class="mt-2 text-muted-foreground">You have unsaved changes. Are you sure you want to discard them?</p>
 					<div class="mt-4 flex gap-2">

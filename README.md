@@ -12,7 +12,7 @@ Built as an internship project for Van Lang University.
 | -------- | ----------------------------------------------------------------- |
 | Frontend | SvelteKit 2, Svelte 5, TailwindCSS, shadcn-svelte                 |
 | Backend  | SvelteKit API routes                                              |
-| Database | PostgreSQL (via Supabase or self-hosted)                          |
+| Database | PostgreSQL (self-hosted)                                         |
 | ORM      | Prisma 6                                                          |
 | Auth     | Auth.js (GitHub OAuth for dev, Microsoft Entra ID for production) |
 | Email    | Resend                                                            |
@@ -65,19 +65,21 @@ DATABASE_URL=postgresql://user:password@host:5432/dbname
 DIRECT_URL=postgresql://user:password@host:5432/dbname
 
 # Auth
-BETTER_AUTH_SECRET=auth-js-generated-secret
+AUTH_SECRET=generate-with-npx-auth-secret
 
 # Mock SSO during dev, GitHub SSO instead of Microsoft
 USE_MOCK_SSO=true
+AUTH_URL=http://localhost:5173
+AUTH_TRUST_HOST=true
 
 # GitHub OAuth (development)
 AUTH_GITHUB_ID=your-github-client-id
 AUTH_GITHUB_SECRET=your-github-client-secret
 
-# Microsoft Entra ID (production - leave blank during dev)
+# Microsoft Entra ID (production — leave blank during dev)
 AUTH_MICROSOFT_ENTRA_ID_ID=
 AUTH_MICROSOFT_ENTRA_ID_SECRET=
-AUTH_MICROSOFT_ENTRA_ID_TENANT_ID=
+AUTH_MICROSOFT_ENTRA_ID_ISSUER=
 
 # Email (Resend)
 RESEND_API_KEY=your-resend-api-key
@@ -116,7 +118,7 @@ This project uses GitHub OAuth during development. To switch to Microsoft Entra 
 ```env
 AUTH_MICROSOFT_ENTRA_ID_ID=your-client-id
 AUTH_MICROSOFT_ENTRA_ID_SECRET=your-client-secret
-AUTH_MICROSOFT_ENTRA_ID_TENANT_ID=your-tenant-id
+AUTH_MICROSOFT_ENTRA_ID_ISSUER=https://login.microsoftonline.com/your-tenant-id/v2.0
 ```
 
 No code changes required - the provider is swapped entirely via environment configuration.

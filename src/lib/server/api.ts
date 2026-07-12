@@ -1,11 +1,8 @@
-import type { RequestEvent } from '@sveltejs/kit';
-
-export async function serverFetch(event: RequestEvent, path: string, options?: RequestInit) {
-	const res = await fetch(`${event.url.origin}${path}`, {
+export async function serverFetch(event: { fetch: typeof globalThis.fetch }, path: string, options?: RequestInit) {
+	const res = await event.fetch(path, {
 		...options,
 		headers: {
 			'Content-Type': 'application/json',
-			cookie: event.request.headers.get('cookie') ?? '',
 			...options?.headers
 		}
 	});

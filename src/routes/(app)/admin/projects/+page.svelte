@@ -15,9 +15,9 @@
 		};
 	}>();
 
-	let search = $state(data.q);
-	let currentPage = $state(data.meta.page);
-	let limit = $state(data.meta.limit);
+	let search = $state('');
+	let currentPage = $state(1);
+	let limit = $state(10);
 	let confirmAction: { project: AdminProject; action: 'deactivate' | 'reactivate' } | null = $state(null);
 	let showConfirm = $state(false);
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
