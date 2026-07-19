@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { signOut } from '@auth/sveltekit/client';
 	import { LayoutDashboard, FolderKanban, ChevronLeft, Shield, Moon, Sun } from '@lucide/svelte';
 	import { mode, toggleMode } from 'mode-watcher';
 	import { Toaster } from 'svelte-sonner';
@@ -116,7 +115,7 @@
 						</div>
 						<DropdownMenu.Item
 							class="mt-1 cursor-pointer text-red-500"
-							onclick={() => signOut({ redirectTo: '/login' })}
+							onclick={() => goto('/logout')}
 						>
 							Đăng xuất
 						</DropdownMenu.Item>

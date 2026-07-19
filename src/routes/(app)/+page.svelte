@@ -309,10 +309,8 @@
 			</div>
 
 			<div>
-				<label class="mb-1 block text-sm font-medium">
-					Description
-					<RichTextEditor bind:content={newDescription} placeholder="Describe the project..." />
-				</label>
+				<label for="cp-description" class="mb-1 block text-sm font-medium">Description</label>
+				<RichTextEditor bind:content={newDescription} placeholder="Describe the project..." />
 				<p class="mt-1 text-xs {descChars > 60 ? 'text-red-500' : 'text-muted-foreground/60'}">
 					{descChars}/60 characters
 				</p>

@@ -2,23 +2,25 @@
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { Search } from '@lucide/svelte';
+	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import type { Task, Project, ProjectMember } from '$lib/type';
 	import { page } from '$app/state';
 	import { Input } from '$lib/components/ui/input';
+	import { onMount } from 'svelte';
 	import TaskDetailModal from '$lib/components/ui/TaskDetailModal.svelte';
 	import CreateTaskModal from '$lib/components/ui/CreateTaskModal.svelte';
 
 	let { data } = $props<{
 		data: {
-			kanban: { TODO: Task[]; DOING: Task[]; DONE: Task[] };
+			kanban: null;
 			project: Project;
+			isAdmin: boolean;
+			members: ProjectMember[];
 		};
 	}>();
 
-	const isAdmin = $derived(
-		data.project.members?.find((m: ProjectMember) => m.user.id === Number(data.session?.user?.id))
-			?.role === 'ADMIN'
-	);
+	const projectId = page.params.id;
+	const isAdmin = data.isAdmin;
 
 	let selectedTask = $state<Task | null>(null);
 	let showDetail = $state(false);
@@ -33,7 +35,6 @@
 		DONE: ''
 	});
 
-	const projectId = page.params.id;
 	const columns = [
 		{ key: 'TODO', label: 'To do' },
 		{ key: 'DOING', label: 'Doing' },
@@ -86,6 +87,7 @@
 			toast.error('Failed to update task status');
 		}
 	}
+
 	function getDescriptionPreview(desc: string | null): string {
 		if (!desc) return '';
 		const plainText = desc
@@ -99,18 +101,100 @@
 		return plainText;
 	}
 
-	function filterColumnTasks(tasks: Task[], query: string) {
-		const q = query.trim().toLowerCase();
-		if (!q) return tasks;
-
-		return tasks.filter(
-			(t) =>
-				t.title.toLowerCase().includes(q) ||
-				t.assignee?.name.toLowerCase().includes(q) ||
-				(t.dueDate && new Date(t.dueDate).toLocaleDateString().includes(q)) ||
-				t.tags.some((tag) => tag.toLowerCase().includes(q))
-		);
+	function formatDate(dateStr: string): string {
+		const d = new Date(dateStr);
+		const day = String(d.getDate()).padStart(2, '0');
+		const month = String(d.getMonth() + 1).padStart(2, '0');
+		const year = d.getFullYear();
+		return `${day}/${month}/${year}`;
 	}
+
+	// --- Lazy column loading ---
+	type ColumnState = {
+		tasks: Task[];
+		page: number;
+		loading: boolean;
+		hasMore: boolean;
+	};
+
+	let columnStates = $state<Record<string, ColumnState>>({
+		TODO: { tasks: [], page: 0, loading: false, hasMore: true },
+		DOING: { tasks: [], page: 0, loading: false, hasMore: true },
+		DONE: { tasks: [], page: 0, loading: false, hasMore: true }
+	});
+
+	let sentinelEls = $state<Record<string, HTMLDivElement | null>>({
+		TODO: null,
+		DOING: null,
+		DONE: null
+	});
+
+	type ColumnKey = 'TODO' | 'DOING' | 'DONE';
+
+	async function loadPage(status: ColumnKey) {
+		const col = columnStates[status];
+		if (!col || col.loading || !col.hasMore) return;
+		col.loading = true;
+
+		try {
+			const nextPage = col.page + 1;
+			const params = new URLSearchParams({ status, page: String(nextPage) });
+			if (columnSearch[status]) params.set('q', columnSearch[status]);
+			const res = await fetch(`/api/projects/${projectId}/kanban?${params}`);
+			const json = await res.json();
+			const existingIds = new Set(col.tasks.map((t: Task) => t.id));
+			const newTasks = (json.tasks as Task[]).filter((t: Task) => !existingIds.has(t.id));
+			col.tasks = [...col.tasks, ...newTasks];
+			col.page = nextPage;
+			col.hasMore = json.meta.hasMore;
+		} catch {
+			toast.error(`Failed to load ${status} tasks`);
+		} finally {
+			col.loading = false;
+		}
+	}
+
+	async function reloadColumn(status: ColumnKey) {
+		const col = columnStates[status];
+		col.tasks = [];
+		col.page = 0;
+		col.hasMore = true;
+		await loadPage(status);
+	}
+
+	let searchTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+
+	function onSearchInput(status: ColumnKey) {
+		if (searchTimers[status]) clearTimeout(searchTimers[status]);
+		searchTimers[status] = setTimeout(() => reloadColumn(status), 300);
+	}
+
+	onMount(() => {
+		const observers: IntersectionObserver[] = [];
+
+		for (const status of ['TODO', 'DOING', 'DONE'] as const) {
+			const sentinel = sentinelEls[status];
+			if (!sentinel) continue;
+
+			const obs = new IntersectionObserver(
+				([entry]) => {
+					if (entry.isIntersecting) {
+						const col = columnStates[status];
+						if (col.hasMore && !col.loading) {
+							loadPage(status);
+						}
+					}
+				},
+				{ rootMargin: '200px' }
+			);
+			obs.observe(sentinel);
+			observers.push(obs);
+		}
+
+		return () => {
+			for (const obs of observers) obs.disconnect();
+		};
+	});
 </script>
 
 <div class="flex h-full gap-4">
@@ -128,6 +212,7 @@
 				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 				<Input
 					bind:value={columnSearch[col.key]}
+					oninput={() => onSearchInput(col.key)}
 					placeholder="Search"
 					class="pl-9"
 					onkeydown={(e: KeyboardEvent) =>
@@ -136,7 +221,7 @@
 			</div>
 
 			<div class="flex flex-1 flex-col gap-2 overflow-y-auto">
-				{#each filterColumnTasks(data.kanban[col.key], columnSearch[col.key]) as task (task.id)}
+				{#each columnStates[col.key].tasks as task (task.id)}
 					<button
 						draggable="true"
 						ondragstart={() => onDragStart(task)}
@@ -149,23 +234,33 @@
 								{getDescriptionPreview(task.description)}
 							</p>
 						{/if}
-						<div class="mt-2 flex items-center justify-between">
-							<span class="text-xs font-medium {priorityColors[task.priority]}">
-								{task.priority}
-							</span>
-							{#if task.assignee}
-								<span class="text-xs text-muted-foreground">{task.assignee.name}</span>
-							{:else}
-								<span class="text-xs text-muted-foreground">{'-'}</span>
-							{/if}
+						<div class="mt-2 flex flex-col gap-0.5">
+							<div class="flex items-center justify-between">
+								<span class="text-xs font-medium {priorityColors[task.priority]}">
+									{task.priority}
+								</span>
+								{#if task.assignee}
+									<span class="text-xs text-muted-foreground">{task.assignee.name}</span>
+								{:else}
+									<span class="text-xs text-muted-foreground">{'-'}</span>
+								{/if}
+							</div>
 							{#if task.dueDate}
 								<span class="text-xs text-muted-foreground">
-									{new Date(task.dueDate).toLocaleDateString()}
+									{formatDate(task.dueDate)}
 								</span>
 							{/if}
 						</div>
 					</button>
 				{/each}
+
+				{#if columnStates[col.key].loading}
+					<div class="flex justify-center py-4">
+						<Loader2Icon class="h-5 w-5 animate-spin text-muted-foreground" />
+					</div>
+				{/if}
+
+				<div bind:this={sentinelEls[col.key]} class="h-1"></div>
 			</div>
 
 			{#if isAdmin}
@@ -186,7 +281,7 @@
 		task={selectedTask}
 		projectId={Number(page.params.id)}
 		isAdmin={data.isAdmin}
-		members={data.project?.members ?? []}
+		members={data.members}
 		onUpdate={() => invalidateAll()}
 	/>
 {/if}
@@ -194,7 +289,7 @@
 <CreateTaskModal
 	bind:open={showCreateTask}
 	projectId={Number(projectId)}
-	members={data.project?.members ?? []}
+	members={data.members}
 	defaultStatus={createDefaultStatus}
 	onCreated={() => invalidateAll()}
 />

@@ -220,14 +220,12 @@
 
 			<!-- Description (rich text) -->
 			<div>
-				<label class="mb-1 block text-sm font-medium">
-					Description
-					<RichTextEditor
-						bind:content={description}
-						disabled={saving}
-						placeholder="Describe the task..."
-					/>
-				</label>
+				<label for="td-description" class="mb-1 block text-sm font-medium">Description</label>
+				<RichTextEditor
+					bind:content={description}
+					disabled={saving}
+					placeholder="Describe the task..."
+				/>
 				{#if errors.description}
 					<p class="mt-1 text-xs text-red-500">
 						Description plain text must be under 2000 characters
