@@ -79,6 +79,9 @@
 				// Get HTML, but if only empty paragraph, return empty string
 				const html = e.getHTML();
 				content = html === '<p></p>' ? '' : html;
+			},
+			onBlur() {
+				editorState = { bold: false, italic: false, underline: false, link: false, h2: false };
 			}
 		});
 	});
