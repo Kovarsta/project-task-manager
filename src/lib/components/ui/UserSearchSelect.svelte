@@ -55,9 +55,11 @@
 				.map((m) => m.user)
 				.filter(
 					(u) =>
+						!query.trim() ||
 						u.name.toLowerCase().includes(query.toLowerCase()) ||
 						u.email.toLowerCase().includes(query.toLowerCase())
-				);
+				)
+				.slice(0, 5);
 			showSuggestions = true;
 			return;
 		}
