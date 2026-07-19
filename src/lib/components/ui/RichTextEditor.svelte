@@ -61,7 +61,10 @@
 					code: false,
 					blockquote: false,
 					horizontalRule: false,
-					strike: false
+					strike: false,
+					// StarterKit v3 includes these — disable to avoid duplicates
+					underline: false,
+					link: false
 				}),
 				Underline,
 				Link.configure({

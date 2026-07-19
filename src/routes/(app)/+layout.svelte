@@ -95,18 +95,16 @@
 				</button>
 
 				<DropdownMenu.Root>
-					<DropdownMenu.Trigger>
-						<button class="flex items-center gap-2 rounded p-1 hover:bg-accent">
-							{#if data.session?.user?.image}
-								<img src={data.session.user.image} alt="avatar" class="h-7 w-7 rounded-full" />
-							{:else}
-								<div
-									class="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-medium"
-								>
-									{data.session?.user?.name?.[0]?.toUpperCase() ?? '?'}
-								</div>
-							{/if}
-						</button>
+					<DropdownMenu.Trigger class="flex items-center gap-2 rounded p-1 hover:bg-accent">
+						{#if data.session?.user?.image}
+							<img src={data.session.user.image} alt="avatar" class="h-7 w-7 rounded-full" />
+						{:else}
+							<div
+								class="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-medium"
+							>
+								{data.session?.user?.name?.[0]?.toUpperCase() ?? '?'}
+							</div>
+						{/if}
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content align="end" class="w-56">
 						<div class="border-b px-3 py-2">
