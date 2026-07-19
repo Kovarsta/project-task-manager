@@ -1,14 +1,14 @@
 import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
-import { requireProjectAdmin } from '$lib/server/auth';
+import { requireProjectAdmin, requireProjectMember } from '$lib/server/auth';
 import { logActivity } from '$lib/server/activity';
 import type { RequestEvent } from '@sveltejs/kit';
-import { requireAuth } from '$lib/server/auth';
+import { parseIdParam } from '$lib/server/helpers';
 
 //Delete: Remove an INVITED user from the project
 export async function DELETE(event: RequestEvent) {
-	const projectId = Number(event.params.id);
-	const targetId = Number(event.params.userId);
+	const projectId = parseIdParam(event.params.id, 'projectId');
+	const targetId = parseIdParam(event.params.userId, 'userId');
 	const admin = await requireProjectAdmin(event, projectId);
 
 	if (admin.id === targetId) {
@@ -43,7 +43,8 @@ export async function DELETE(event: RequestEvent) {
 
 // GET: Search
 export async function GET(event: RequestEvent) {
-	await requireAuth(event);
+	const projectId = parseIdParam(event.params.id, 'projectId');
+	await requireProjectMember(event, projectId);
 
 	const q = event.url.searchParams.get('q')?.trim();
 	if (!q || q.length < 2) return json([]);
@@ -65,8 +66,8 @@ export async function GET(event: RequestEvent) {
 
 // PATCH: Use to elavate someone to a higher permission
 export async function PATCH(event: RequestEvent) {
-	const projectId = Number(event.params.id);
-	const targetId = Number(event.params.userId);
+	const projectId = parseIdParam(event.params.id, 'projectId');
+	const targetId = parseIdParam(event.params.userId, 'userId');
 	const user = await requireProjectAdmin(event, projectId);
 
 	const body = await event.request.json();

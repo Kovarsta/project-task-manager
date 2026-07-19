@@ -2,10 +2,11 @@ import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireSuperAdmin } from '$lib/server/auth';
 import type { RequestEvent } from '@sveltejs/kit';
+import { parseIdParam } from '$lib/server/helpers';
 
 export async function PATCH(event: RequestEvent) {
 	const caller = await requireSuperAdmin(event);
-	const userId = Number(event.params.id);
+	const userId = parseIdParam(event.params.id, 'userId');
 
 	if (isNaN(userId)) throw error(400, 'Invalid user ID');
 

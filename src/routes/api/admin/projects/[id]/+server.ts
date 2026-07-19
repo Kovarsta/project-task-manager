@@ -2,12 +2,13 @@ import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireSuperAdmin } from '$lib/server/auth';
 import type { RequestEvent } from '@sveltejs/kit';
+import { parseIdParam } from '$lib/server/helpers';
 
 // PATCH: Deactivate or reactivate a project
 export async function PATCH(event: RequestEvent) {
 	await requireSuperAdmin(event);
 
-	const projectId = Number(event.params.id);
+	const projectId = parseIdParam(event.params.id, 'projectId');
 	if (isNaN(projectId)) throw error(400, 'Invalid project ID');
 
 	const body = await event.request.json();

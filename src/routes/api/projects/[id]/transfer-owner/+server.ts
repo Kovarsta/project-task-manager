@@ -3,9 +3,10 @@ import { prisma } from '$lib/prisma';
 import { requireProjectOwner } from '$lib/server/auth';
 import { logActivity } from '$lib/server/activity';
 import type { RequestEvent } from '@sveltejs/kit';
+import { parseIdParam } from '$lib/server/helpers';
 
 export async function POST(event: RequestEvent) {
-	const projectId = Number(event.params.id);
+	const projectId = parseIdParam(event.params.id, 'projectId');
 	const owner = await requireProjectOwner(event, projectId);
 	const body = await event.request.json();
 	const targetId = Number(body.userId);

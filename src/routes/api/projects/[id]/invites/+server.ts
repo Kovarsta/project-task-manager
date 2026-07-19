@@ -4,28 +4,36 @@ import { requireProjectAdmin } from '$lib/server/auth';
 import { logActivity } from '$lib/server/activity';
 import type { RequestEvent } from '@sveltejs/kit';
 import { sendInviteEmail } from '$lib/server/email';
+import { parseIdParam } from '$lib/server/helpers';
 
 // GET: All invites
 export async function GET(event: RequestEvent) {
-	const projectId = Number(event.params.id);
+	const projectId = parseIdParam(event.params.id, 'projectId');
 	await requireProjectAdmin(event, projectId);
 
-	const invites = await prisma.projectInvite.findMany({
-		where: {
-			projectId
-		},
-		include: {
-			invitedBy: { select: { id: true, name: true, email: true } }
-		},
-		orderBy: { createdAt: 'desc' }
-	});
+	const page = Math.max(1, Number(event.url.searchParams.get('page') ?? 1));
+	const limit = Math.min(50, Math.max(1, Number(event.url.searchParams.get('limit') ?? 20)));
+	const skip = (page - 1) * limit;
 
-	return json(invites);
+	const [invites, total] = await Promise.all([
+		prisma.projectInvite.findMany({
+			where: { projectId },
+			include: {
+				invitedBy: { select: { id: true, name: true, email: true } }
+			},
+			orderBy: { createdAt: 'desc' },
+			skip,
+			take: limit
+		}),
+		prisma.projectInvite.count({ where: { projectId } })
+	]);
+
+	return json({ invites, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } });
 }
 
 // POST: Generate invitation
 export async function POST(event: RequestEvent) {
-	const projectId = Number(event.params.id);
+	const projectId = parseIdParam(event.params.id, 'projectId');
 	const user = await requireProjectAdmin(event, projectId);
 	const body = await event.request.json();
 

@@ -12,6 +12,8 @@
 			projects: AdminProject[];
 			meta: { page: number; limit: number; totalPages: number };
 			q: string;
+			sort: string;
+			order: string;
 		};
 	}>();
 
@@ -21,8 +23,8 @@
 	let confirmAction: { project: AdminProject; action: 'deactivate' | 'reactivate' } | null = $state(null);
 	let showConfirm = $state(false);
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
-	let sortField = $state<'name' | 'tasks' | 'members' | 'created' | 'status'>('name');
-	let sortDir = $state<'asc' | 'desc'>('asc');
+	let sortField = $state(data.sort);
+	let sortDir = $state(data.order as 'asc' | 'desc');
 
 	function statusLabel(s: string) {
 		switch (s) {
@@ -48,37 +50,19 @@
 		return tagColors[index % tagColors.length];
 	}
 
-	function handleSortClick(field: typeof sortField) {
-		if (sortField === field) {
-			sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-		} else {
-			sortField = field;
-			sortDir = 'asc';
-		}
+	function handleSortClick(field: string) {
+		const newDir = sortField === field && sortDir === 'asc' ? 'desc' : 'asc';
+		const params = new URLSearchParams({ page: String(currentPage), limit: String(limit), sort: field, order: newDir });
+		if (search) params.set('q', search);
+		goto(`?${params}`, { keepFocus: true, replaceState: true });
 	}
-
-	let sorted = $derived.by(() => {
-		return [...data.projects].sort((a, b) => {
-			let cmp = 0;
-			if (sortField === 'name') {
-				cmp = a.name.localeCompare(b.name);
-			} else if (sortField === 'tasks') {
-				cmp = a._count.tasks - b._count.tasks;
-			} else if (sortField === 'members') {
-				cmp = a._count.members - b._count.members;
-			} else if (sortField === 'status') {
-				cmp = (a.deactivatedAt ? 1 : 0) - (b.deactivatedAt ? 1 : 0);
-			} else if (sortField === 'created') {
-				cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-			}
-			return sortDir === 'asc' ? cmp : -cmp;
-		});
-	});
 
 	$effect(() => {
 		search = data.q;
 		currentPage = data.meta.page;
 		limit = data.meta.limit;
+		sortField = data.sort;
+		sortDir = data.order as 'asc' | 'desc';
 	});
 
 	function onSearchInput(value: string) {
@@ -86,7 +70,7 @@
 		clearTimeout(debounceTimer);
 		debounceTimer = setTimeout(() => {
 			currentPage = 1;
-			const params = new URLSearchParams({ page: '1', limit: String(limit) });
+			const params = new URLSearchParams({ page: '1', limit: String(limit), sort: sortField, order: sortDir });
 			if (value) params.set('q', value);
 			goto(`?${params}`, { keepFocus: true, replaceState: true });
 		}, 300);
@@ -95,12 +79,12 @@
 	function clearSearch() {
 		search = '';
 		currentPage = 1;
-		const params = new URLSearchParams({ page: '1', limit: String(limit) });
+		const params = new URLSearchParams({ page: '1', limit: String(limit), sort: sortField, order: sortDir });
 		goto(`?${params}`, { keepFocus: true });
 	}
 
 	function reload() {
-		const params = new URLSearchParams({ page: String(currentPage), limit: String(limit) });
+		const params = new URLSearchParams({ page: String(currentPage), limit: String(limit), sort: sortField, order: sortDir });
 		if (search) params.set('q', search);
 		goto(`?${params}`, { keepFocus: true });
 	}
@@ -150,12 +134,12 @@
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-1">
 					<span class="mr-1 text-xs text-muted-foreground">Sort by:</span>
-					{#each [['name', 'Name'], ['status', 'Status'], ['tasks', 'Tasks'], ['members', 'Members'], ['created', 'Created']] as [field, label] (field)}
+					{#each [['name', 'Name'], ['created', 'Created']] as [field, label] (field)}
 						<Button
 							variant={sortField === field ? 'secondary' : 'ghost'}
 							size="sm"
 							class="h-8 gap-1 text-xs"
-							onclick={() => handleSortClick(field as typeof sortField)}
+							onclick={() => handleSortClick(field)}
 						>
 							{label}
 							{#if sortField === field}
@@ -185,7 +169,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each sorted as project (project.id)}
+					{#each data.projects as project (project.id)}
 						<tr class="border-t transition-colors hover:bg-muted/20 {project.deactivatedAt ? 'opacity-50' : ''}">
 							<td class="px-4 py-3">
 								<div class="flex items-center gap-2">
@@ -258,7 +242,7 @@
 			</table>
 		</div>
 
-		{#if sorted.length === 0}
+		{#if data.projects.length === 0}
 			<p class="mt-6 text-center text-sm text-muted-foreground">
 				{data.q ? `No projects matching "${data.q}"` : 'No projects found'}
 			</p>

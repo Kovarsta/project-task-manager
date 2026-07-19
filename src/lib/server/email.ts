@@ -73,7 +73,7 @@ export async function sendInviteEmail(to: string, projectName: string, link: str
 			subject: `You've been invited to ${projectName}`,
 			html
 		});
-		console.log(result);
+		// result logged by Resend SDK internally
 	} catch (err) {
 		console.error('Failed to send invite email:', err);
 		throw new Error('Failed to send invite email');

@@ -10,9 +10,18 @@ export async function GET(event: RequestEvent) {
 
 	const { searchParams } = event.url;
 	const q = searchParams.get('q')?.trim();
-	const page = Number(searchParams.get('page') ?? 1);
-	const limit = Number(searchParams.get('limit') ?? 20);
+	const page = Math.max(1, Number(searchParams.get('page') ?? 1));
+	const limit = Math.min(50, Math.max(1, Number(searchParams.get('limit') ?? 20)));
+	const sortBy = searchParams.get('sort') ?? 'name';
+	const order = searchParams.get('order') === 'desc' ? 'desc' : 'asc';
 	const skip = (page - 1) * limit;
+
+	const ALLOWED_SORTS: Record<string, any> = {
+		name: { name: order },
+		created: { createdAt: order }
+	};
+
+	const orderBy = ALLOWED_SORTS[sortBy] ?? ALLOWED_SORTS.name;
 
 	const where = {
 		...(q && projectSearchFilter(q))
@@ -25,7 +34,7 @@ export async function GET(event: RequestEvent) {
 				createdBy: { select: { id: true, name: true, email: true } },
 				_count: { select: { members: true, tasks: true } }
 			},
-			orderBy: { createdAt: 'desc' },
+			orderBy,
 			skip,
 			take: limit
 		}),

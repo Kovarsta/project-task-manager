@@ -2,10 +2,11 @@ import { json } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireProjectMember } from '$lib/server/auth';
 import type { RequestEvent } from '@sveltejs/kit';
+import { parseIdParam } from '$lib/server/helpers';
 
 // GET: Paginated activity log
 export async function GET(event: RequestEvent) {
-	const projectId = Number(event.params.id);
+	const projectId = parseIdParam(event.params.id, 'projectId');
 	await requireProjectMember(event, projectId);
 
 	const page = Math.max(1, Number(event.url.searchParams.get('page') ?? 1));

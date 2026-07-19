@@ -1,11 +1,12 @@
 import { json } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireProjectMember } from '$lib/server/auth';
+import { parseIdParam } from '$lib/server/helpers';
 import type { RequestEvent } from '@sveltejs/kit';
 
 // GET: Return members with pagination and search
 export async function GET(event: RequestEvent) {
-	const projectId = Number(event.params.id);
+	const projectId = parseIdParam(event.params.id, 'projectId');
 	await requireProjectMember(event, projectId);
 
 	const page = Math.max(1, Number(event.url.searchParams.get('page') ?? 1));
@@ -30,7 +31,7 @@ export async function GET(event: RequestEvent) {
 		prisma.projectMember.findMany({
 			where,
 			include: { user: true },
-			orderBy: { joinedAt: 'asc' },
+			orderBy: [{ isOwner: 'desc' }, { role: 'asc' }, { joinedAt: 'asc' }, { id: 'asc' }],
 			skip: (page - 1) * limit,
 			take: limit
 		}),

@@ -2,10 +2,11 @@ import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireProjectMember } from '$lib/server/auth';
 import type { RequestEvent } from '@sveltejs/kit';
+import { parseIdParam } from '$lib/server/helpers';
 
 // GET: Summary
 export async function GET(event: RequestEvent) {
-	const projectId = Number(event.params.id);
+	const projectId = parseIdParam(event.params.id, 'projectId');
 	await requireProjectMember(event, projectId);
 
 	const weekAgo = new Date();
@@ -37,7 +38,9 @@ export async function GET(event: RequestEvent) {
 		// Active tasks for urgent list
 		prisma.task.findMany({
 			where: { projectId, status: { not: 'DONE' } },
-			include: { assignee: { select: { id: true, name: true, email: true } } }
+			include: { assignee: { select: { id: true, name: true, email: true } } },
+			orderBy: [{ dueDate: 'asc' }, { priority: 'desc' }],
+			take: 5
 		}),
 
 		// Recent activity
@@ -49,24 +52,6 @@ export async function GET(event: RequestEvent) {
 		})
 	]);
 
-	const priorityWeight: Record<string, number> = {
-		HIGHEST: 5,
-		HIGH: 4,
-		MEDIUM: 3,
-		LOW: 2,
-		LOWEST: 1
-	};
-
-	const urgentTasks = activeTasks
-		.sort((a, b) => {
-			if (a.dueDate && b.dueDate)
-				return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-			if (a.dueDate) return -1;
-			if (b.dueDate) return 1;
-			return (priorityWeight[b.priority] ?? 3) - (priorityWeight[a.priority] ?? 3);
-		})
-		.slice(0, 5);
-
 	return json({
 		total: project._count.tasks,
 		members: project._count.members,
@@ -75,7 +60,7 @@ export async function GET(event: RequestEvent) {
 		doing,
 		done,
 		overdue,
-		urgentTasks,
+		urgentTasks: activeTasks,
 		recentActivity,
 		chart: {
 			labels: ['To Do', 'In Progress', 'Done'],

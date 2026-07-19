@@ -13,12 +13,13 @@ function getProjectId(event: RequestEvent) {
 // GET: Return a specific project data
 export async function GET(event: RequestEvent) {
 	const projectId = getProjectId(event);
-	await requireProjectMember(event, projectId);
+	const { user } = await requireProjectMember(event, projectId);
 
 	const project = await prisma.project.findUnique({
 		where: { id: projectId },
 		include: {
 			members: {
+				where: { userId: user.id },
 				include: { user: true }
 			},
 			_count: {
@@ -32,6 +33,10 @@ export async function GET(event: RequestEvent) {
 	});
 
 	if (!project) throw error(404, 'Project not found');
+
+	// Members omitted from the project response — admin pages and modals
+	// fetch them via the dedicated /members endpoint to keep this lightweight.
+
 	return json(project);
 }
 

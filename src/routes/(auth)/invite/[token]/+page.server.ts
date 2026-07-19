@@ -1,33 +1,39 @@
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
+import { getValidInvite } from '$lib/server/invite';
+import type { HttpError } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async (event) => {
 	const session = await event.locals.auth();
 
-	// Not logged in, redirect to login, come back here after
 	if (!session) {
 		throw redirect(307, `/login?redirectTo=/invite/${event.params.token}`);
 	}
 
-	// Validate the token
-	const res = await fetch(`${event.url.origin}/api/invites/${event.params.token}`, {
-		headers: { cookie: event.request.headers.get('cookie') ?? '' }
-	});
+	try {
+		const invite = await getValidInvite(event.params.token!);
 
-	const data = await res.json();
+		if (session.user.email?.toLowerCase() !== invite.invitedEmail.toLowerCase()) {
+			return {
+				error: `This invite was sent to ${invite.invitedEmail}. You're signed in as ${session.user.email}.`,
+				projectName: null as string | null,
+				invitedEmail: invite.invitedEmail
+			};
+		}
 
-	if (!res.ok) {
-		return { error: data.message, projectName: null, invitedEmail: null };
-	}
-
-	// Email mismatch check happens here too, before showing accept screen
-	if (session.user.email.toLowerCase() !== data.invitedEmail.toLowerCase()) {
 		return {
-			error: `This invite was sent to ${data.invitedEmail}. You're signed in as ${session.user.email}.`,
-			projectName: null,
-			invitedEmail: data.invitedEmail
+			projectName: invite.project.name,
+			invitedEmail: invite.invitedEmail,
+			expiresAt: invite.expiresAt,
+			deactivated: !!invite.project.deactivatedAt,
+			error: null as string | null
+		};
+	} catch (e) {
+		const err = e as HttpError;
+		return {
+			error: err.body?.message ?? 'Invalid invite link',
+			projectName: null as string | null,
+			invitedEmail: null as string | null
 		};
 	}
-
-	return { ...data, error: null };
 };

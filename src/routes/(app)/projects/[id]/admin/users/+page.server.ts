@@ -15,6 +15,6 @@ export const load: PageServerLoad = async (event) => {
 	return {
 		members: membersRes.members,
 		meta: membersRes.meta,
-		invites
+		invites: invites.invites
 	};
 };
