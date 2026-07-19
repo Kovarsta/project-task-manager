@@ -4,33 +4,31 @@ import { requireProjectAdmin, requireProjectMember } from '$lib/server/auth';
 import { logActivity } from '$lib/server/activity';
 import { sanitizeHtml } from '$lib/sanitize';
 import type { RequestEvent } from '@sveltejs/kit';
+import { parseIdParam } from '$lib/server/helpers';
+import { TaskStatus, TaskPriority } from '@prisma/client';
+
+const taskInclude = {
+	assignee: { select: { id: true, name: true, email: true } as const },
+	createdBy: { select: { id: true, name: true } as const }
+};
 
 async function getTask(id: number) {
-	const task = await prisma.task.findUnique({ where: { id } });
+	const task = await prisma.task.findUnique({ where: { id }, include: taskInclude });
 	if (!task) throw error(404, 'Task not found');
 	return task;
 }
 
 // GET: View specific task
 export async function GET(event: RequestEvent) {
-	const taskId = Number(event.params.id);
+	const taskId = parseIdParam(event.params.id, 'taskId');
 	const task = await getTask(taskId);
 	await requireProjectMember(event, task.projectId);
-
-	const full = await prisma.task.findUnique({
-		where: { id: taskId },
-		include: {
-			assignee: { select: { id: true, name: true, email: true } },
-			createdBy: { select: { id: true, name: true } }
-		}
-	});
-
-	return json(full);
+	return json(task);
 }
 
 // PATCH: Update specific task
 export async function PATCH(event: RequestEvent) {
-	const taskId = Number(event.params.id);
+	const taskId = parseIdParam(event.params.id, 'taskId');
 	const task = await getTask(taskId);
 	const { user, member } = await requireProjectMember(event, task.projectId);
 	const body = await event.request.json();
@@ -60,8 +58,11 @@ export async function PATCH(event: RequestEvent) {
 		body.tags = tags;
 	}
 
-	if (body.dueDate && new Date(body.dueDate) < new Date()) {
-		throw error(400, 'Due date cannot be in the past');
+	if (body.dueDate) {
+		const dueDate = new Date(body.dueDate);
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		if (dueDate < today) throw error(400, 'Due date cannot be in the past');
 	}
 
 	if (body.assigneeId !== undefined && !isAdmin) {
@@ -81,7 +82,14 @@ export async function PATCH(event: RequestEvent) {
 	}
 
 	const oldStatus = task.status;
-	const newStatus = body.status ?? oldStatus;
+
+	const validStatuses = Object.values(TaskStatus) as string[];
+	const validPriorities = Object.values(TaskPriority) as string[];
+	const rawStatus = body.status ?? oldStatus;
+	const newStatus = validStatuses.includes(rawStatus) ? rawStatus : oldStatus;
+	if (body.priority !== undefined && !validPriorities.includes(body.priority)) {
+		throw error(400, `Invalid priority: must be one of ${validPriorities.join(', ')}`);
+	}
 
 	const updatedTask = await prisma.$transaction(async (tx) => {
 		if (newStatus !== oldStatus) {
@@ -101,7 +109,7 @@ export async function PATCH(event: RequestEvent) {
 				...(body.title !== undefined && { title: body.title }),
 				...(body.description !== undefined && { description: body.description }),
 				...(body.tags !== undefined && { tags: body.tags }),
-				...(body.status !== undefined && { status: body.status }),
+				...(body.status !== undefined && { status: newStatus }),
 				...(body.priority !== undefined && { priority: body.priority }),
 				...(body.dueDate !== undefined && {
 					dueDate: body.dueDate ? new Date(body.dueDate) : null
@@ -113,10 +121,7 @@ export async function PATCH(event: RequestEvent) {
 				...(newStatus === 'DONE' && !task.completedAt && { completedAt: new Date() }),
 				...(newStatus !== 'DONE' && task.completedAt && { completedAt: null })
 			},
-			include: {
-				assignee: { select: { id: true, name: true, email: true } },
-				createdBy: { select: { id: true, name: true } }
-			}
+			include: taskInclude
 		});
 	});
 
@@ -149,7 +154,7 @@ export async function PATCH(event: RequestEvent) {
 
 // DELETE: you already know
 export async function DELETE(event: RequestEvent) {
-	const taskId = Number(event.params.id);
+	const taskId = parseIdParam(event.params.id, 'taskId');
 	const task = await getTask(taskId);
 	const user = await requireProjectAdmin(event, task.projectId);
 

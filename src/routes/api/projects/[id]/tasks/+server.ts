@@ -5,10 +5,11 @@ import { logActivity } from '$lib/server/activity';
 import { sanitizeHtml } from '$lib/sanitize';
 import type { RequestEvent } from '@sveltejs/kit';
 import { TaskStatus, TaskPriority } from '@prisma/client';
+import { parseIdParam } from '$lib/server/helpers';
 
 // GET: View all task
 export async function GET(event: RequestEvent) {
-	const projectId = Number(event.params.id);
+	const projectId = parseIdParam(event.params.id, 'projectId');
 	await requireProjectMember(event, projectId);
 
 	const { searchParams } = event.url;
@@ -17,11 +18,14 @@ export async function GET(event: RequestEvent) {
 	const priority = searchParams.get('priority');
 	const assignee = searchParams.get('assignee');
 	const tag = searchParams.get('tag')?.trim();
-	const sort = searchParams.get('sort') ?? 'createdAt';
+	const sortBy = searchParams.get('sort') ?? 'createdAt';
 	const order = searchParams.get('order') ?? 'desc';
-	const page = Number(searchParams.get('page') ?? 1);
-	const limit = Number(searchParams.get('limit') ?? 20);
+	const page = Math.max(1, Number(searchParams.get('page') ?? 1));
+	const limit = Math.min(50, Math.max(1, Number(searchParams.get('limit') ?? 20)));
 	const skip = (page - 1) * limit;
+
+	const ALLOWED_SORTS = ['title', 'status', 'priority', 'dueDate', 'createdAt'];
+	const sort = ALLOWED_SORTS.includes(sortBy) ? sortBy : 'createdAt';
 
 	const statusEnum = Object.values(TaskStatus).includes(status as TaskStatus)
 		? (status as TaskStatus)
@@ -61,7 +65,7 @@ export async function GET(event: RequestEvent) {
 
 // POST: Create task
 export async function POST(event: RequestEvent) {
-	const projectId = Number(event.params.id);
+	const projectId = parseIdParam(event.params.id, 'projectId');
 	const user = await requireProjectAdmin(event, projectId);
 	const body = await event.request.json();
 
@@ -81,8 +85,11 @@ export async function POST(event: RequestEvent) {
 	if (tags.some((t: string) => t.length > 30))
 		throw error(400, 'Each tag must be under 30 characters');
 
-	if (body.dueDate && new Date(body.dueDate) < new Date()) {
-		throw error(400, 'Due date cannot be in the past');
+	if (body.dueDate) {
+		const dueDate = new Date(body.dueDate);
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		if (dueDate < today) throw error(400, 'Due date cannot be in the past');
 	}
 
 	if (body.assigneeId) {
@@ -94,14 +101,19 @@ export async function POST(event: RequestEvent) {
 		if (!member) throw error(400, 'Assignee must be a project member');
 	}
 
+	const validStatuses = Object.values(TaskStatus) as string[];
+	const validPriorities = Object.values(TaskPriority) as string[];
+	const taskStatus = validStatuses.includes(body.status) ? body.status : 'TODO';
+	const taskPriority = validPriorities.includes(body.priority) ? body.priority : 'MEDIUM';
+
 	const task = await prisma.task.create({
 		data: {
 			projectId,
 			title,
 			description: description ?? null,
 			tags,
-			status: body.status ?? 'TODO',
-			priority: body.priority ?? 'MEDIUM',
+			status: taskStatus,
+			priority: taskPriority,
 			assigneeId: body.assigneeId ? Number(body.assigneeId) : null,
 			dueDate: body.dueDate ? new Date(body.dueDate) : null,
 			createdById: user.id
