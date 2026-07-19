@@ -191,7 +191,7 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="max-w-2xl" showCloseButton={false} {onInteractOutside} {onEscapeKeydown}>
+	<Dialog.Content class="max-w-2xl overflow-y-visible max-h-none" showCloseButton={false} {onInteractOutside} {onEscapeKeydown}>
 		<Dialog.Header>
 			<div class="flex items-center justify-between">
 				<Dialog.Title>Task Details</Dialog.Title>

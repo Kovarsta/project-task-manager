@@ -27,7 +27,6 @@ services:
       # Docker-specific overrides (different hostnames from .env)
       DATABASE_URL: postgresql://postgres:postgres@db:5432/projectmanager
       DIRECT_URL: postgresql://postgres:postgres@db:5432/projectmanager
-      AUTH_URL: http://localhost:3000
       ORIGIN: http://localhost:3000
     depends_on:
       db:

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { Input } from '$lib/components/ui/input';
-	import { tick } from 'svelte';
 
 	let {
 		value = $bindable(),
@@ -19,8 +18,6 @@
 	let showSuggestions = $state(false);
 	let debounceTimer: ReturnType<typeof setTimeout>;
 	let inputEl: HTMLInputElement | null = null;
-	let dropdownStyle = $state('');
-
 	let lastSyncedValue = $state<string | null>(null);
 
 	$effect(() => {
@@ -52,15 +49,7 @@
 		return () => action?.destroy();
 	});
 
-	function repositionDropdown() {
-		if (!inputEl) return;
-		const rect = inputEl.getBoundingClientRect();
-		const gap = 4;
-		dropdownStyle = `position:fixed;left:${rect.left}px;width:${rect.width}px;top:${rect.bottom + gap}px;max-height:min(30vh, 320px);overflow-y:auto;z-index:9999`;
-	}
-
 	async function search() {
-		repositionDropdown();
 		if (members) {
 			suggestions = members
 				.map((m) => m.user)
@@ -112,8 +101,7 @@
 
 	{#if showSuggestions && suggestions.length > 0}
 		<div
-			style={dropdownStyle}
-			class="rounded-lg border bg-background shadow-lg"
+			class="absolute left-0 top-full w-full z-50 rounded-lg border bg-background shadow-lg max-h-[min(30vh,320px)] overflow-y-auto"
 		>
 			{#each suggestions as user (user.id)}
 				<button

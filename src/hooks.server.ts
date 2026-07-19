@@ -2,17 +2,24 @@ import { handle as authHandle } from './auth';
 import { sequence } from '@sveltejs/kit/hooks';
 import type { Handle } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
-import type { HttpError } from '@sveltejs/kit';
 
 // --- Global error handler (sanitize Prisma + unexpected errors) ---
-export function handleError(e: unknown) {
-	const http = e as HttpError;
-	if (http?.status && http?.body) {
-		return { message: http.body.message ?? http.body };
+export function handleError({
+	error: e,
+	status
+}: {
+	error: unknown;
+	event: import('@sveltejs/kit').RequestEvent;
+	status?: number;
+	message: string;
+}) {
+	// 404s (favicon, bots, etc.) — no logging needed
+	if (status === 404) {
+		return { message: 'Not Found' };
 	}
 
 	// Prisma known request errors leak the query or constraint name
-	const prismaErr = e as { code?: string; meta?: Record<string, unknown> };
+	const prismaErr = e as { code?: string };
 	if (prismaErr.code?.startsWith?.('P')) {
 		return {
 			message: 'A database error occurred. Please try again later.'
