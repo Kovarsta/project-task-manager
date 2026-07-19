@@ -22,21 +22,13 @@ services:
     restart: unless-stopped
     ports:
       - '3000:3000'
+    env_file: .env
     environment:
+      # Docker-specific overrides (different hostnames from .env)
       DATABASE_URL: postgresql://postgres:postgres@db:5432/projectmanager
       DIRECT_URL: postgresql://postgres:postgres@db:5432/projectmanager
-      AUTH_SECRET: ${AUTH_SECRET:-change-me-in-production}
-      USE_MOCK_SSO: ${USE_MOCK_SSO:-true}
-      AUTH_GITHUB_ID: ${AUTH_GITHUB_ID:-}
-      AUTH_GITHUB_SECRET: ${AUTH_GITHUB_SECRET:-}
-      AUTH_MICROSOFT_ENTRA_ID_ID: ${AUTH_MICROSOFT_ENTRA_ID_ID:-}
-      AUTH_MICROSOFT_ENTRA_ID_SECRET: ${AUTH_MICROSOFT_ENTRA_ID_SECRET:-}
-      AUTH_MICROSOFT_ENTRA_ID_ISSUER: ${AUTH_MICROSOFT_ENTRA_ID_ISSUER:-}
       AUTH_URL: http://localhost:3000
-      AUTH_TRUST_HOST: true
-      RESEND_API_KEY: ${RESEND_API_KEY:-}
-      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-noreply@example.com}
-      ALLOWED_EMAIL_DOMAIN: ${ALLOWED_EMAIL_DOMAIN:-}
+      ORIGIN: http://localhost:3000
     depends_on:
       db:
         condition: service_healthy
