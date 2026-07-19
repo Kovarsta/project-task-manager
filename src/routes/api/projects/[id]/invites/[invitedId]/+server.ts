@@ -2,14 +2,15 @@ import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireProjectAdmin } from '$lib/server/auth';
 import type { RequestEvent } from '@sveltejs/kit';
+import { parseIdParam } from '$lib/server/helpers';
 
 // DELETE: revoke invite
 export async function DELETE(event: RequestEvent) {
 	const token = event.params.invitedId;
 	if (!token) throw error(400, 'Invalid invite link');
 
-	const projectId = Number(event.params.id);
-	const inviteId = Number(token);
+	const projectId = parseIdParam(event.params.id, 'projectId');
+	const inviteId = parseIdParam(token, 'invitedId');
 	await requireProjectAdmin(event, projectId);
 
 	const invite = await prisma.projectInvite.findUnique({

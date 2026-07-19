@@ -2,21 +2,8 @@ import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireAuth } from '$lib/server/auth';
 import { logActivity } from '$lib/server/activity';
+import { getValidInvite } from '$lib/server/invite';
 import type { RequestEvent } from '@sveltejs/kit';
-
-async function getValidInvite(token: string) {
-	const invite = await prisma.projectInvite.findUnique({
-		where: { token },
-		include: { project: true }
-	});
-
-	if (!invite) throw error(404, 'Invalid invite link');
-	if (invite.status !== 'PENDING') throw error(400, 'Invite has already been used or revoked');
-	if (invite.expiresAt < new Date()) throw error(400, 'Invite link has expired');
-	if (invite.project.deactivatedAt) throw error(400, 'This project is no longer active');
-
-	return invite;
-}
 
 // POST: Accept an invitation code
 export async function POST(event: RequestEvent) {
@@ -31,51 +18,55 @@ export async function POST(event: RequestEvent) {
 		throw error(403, 'This invite was sent to a different email address');
 	}
 
-	// Already a member, just redirect
-	const existing = await prisma.projectMember.findUnique({
-		where: {
-			projectId_userId: {
-				projectId: invite.projectId,
-				userId: user.id
+	// Accept — membership check + create inside a transaction to avoid TOCTOU
+	const result = await prisma.$transaction(async (tx) => {
+		const existing = await tx.projectMember.findUnique({
+			where: {
+				projectId_userId: {
+					projectId: invite.projectId,
+					userId: user.id
+				}
 			}
-		}
-	});
-
-	if (existing) {
-		await prisma.projectInvite.update({
-			where: { id: invite.id },
-			data: { status: 'ACCEPTED', acceptedAt: new Date(), acceptedById: user.id }
 		});
-		return json({ projectId: invite.projectId, alreadyMember: true });
-	}
 
-	// Accept, create membership and consume token
-	await prisma.$transaction([
-		prisma.projectMember.create({
+		if (existing) {
+			await tx.projectInvite.update({
+				where: { id: invite.id },
+				data: { status: 'ACCEPTED', acceptedAt: new Date(), acceptedById: user.id }
+			});
+			return { projectId: invite.projectId, alreadyMember: true };
+		}
+
+		await tx.projectMember.create({
 			data: {
 				projectId: invite.projectId,
 				userId: user.id,
 				role: 'MEMBER'
 			}
-		}),
-		prisma.projectInvite.update({
+		});
+
+		await tx.projectInvite.update({
 			where: { id: invite.id },
 			data: {
 				status: 'ACCEPTED',
 				acceptedAt: new Date(),
 				acceptedById: user.id
 			}
-		})
-	]);
+		});
 
-	await logActivity({
-		projectId: invite.projectId,
-		userId: user.id,
-		action: 'member_joined',
-		entityType: 'member',
-		entityId: user.id,
-		metadata: { name: user.name, email: user.email }
+		return { projectId: invite.projectId, alreadyMember: false };
 	});
 
-	return json({ projectId: invite.projectId, alreadyMember: false });
+	if (!result.alreadyMember) {
+		await logActivity({
+			projectId: invite.projectId,
+			userId: user.id,
+			action: 'member_joined',
+			entityType: 'member',
+			entityId: user.id,
+			metadata: { name: user.name, email: user.email }
+		});
+	}
+
+	return json(result);
 }

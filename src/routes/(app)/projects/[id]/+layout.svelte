@@ -82,7 +82,7 @@
 	};
 
 	let { data, children } = $props<{
-		data: { project: Project; session: { user: SessionUser } | null };
+		data: { project: Project; session: { user: SessionUser } | null; members: ProjectMember[] };
 		children: Snippet;
 	}>();
 
@@ -209,7 +209,7 @@
 	<CreateTaskModal
 		bind:open={showCreateTask}
 		projectId={Number(projectId)}
-		members={data.project.members ?? []}
+		members={data.members}
 		onCreated={() => invalidateAll()}
 	/>
 {/if}

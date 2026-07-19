@@ -50,32 +50,39 @@ model User {
   deactivatedAt DateTime?
   createdAt     DateTime  @default(now())
 
-  createdProjects   Project[]         @relation("CreatedBy")
-  memberships       ProjectMember[]
-  invitesSent       ProjectInvite[]   @relation("InvitedBy")
-  invitesAccepted   ProjectInvite[]   @relation("AcceptedBy")
-  assignedTasks     Task[]            @relation("AssignedTo")
-  createdTasks      Task[]            @relation("TaskCreatedBy")
-  statusChanges     TaskStatusHistory[]
-  activityLogs      ActivityLog[]
+  createdProjects Project[]           @relation("CreatedBy")
+  memberships     ProjectMember[]
+  invitesSent     ProjectInvite[]     @relation("InvitedBy")
+  invitesAccepted ProjectInvite[]     @relation("AcceptedBy")
+  assignedTasks   Task[]              @relation("AssignedTo")
+  createdTasks    Task[]              @relation("TaskCreatedBy")
+  statusChanges   TaskStatusHistory[]
+  activityLogs    ActivityLog[]
+
+  @@index([email])
+  @@index([deactivatedAt])
 }
 
 model Project {
-  id             Int           @id @default(autoincrement())
-  name           String
-  status         ProjectStatus @default(ACTIVE)
-  deadline       DateTime?
-  tags           String[]      @default([])
-  description    String?
-  deactivatedAt  DateTime?
-  createdBy      User          @relation("CreatedBy", fields: [createdById], references: [id])
-  createdById    Int
-  createdAt      DateTime      @default(now())
+  id            Int           @id @default(autoincrement())
+  name          String
+  status        ProjectStatus @default(ACTIVE)
+  deadline      DateTime?
+  tags          String[]      @default([])
+  description   String?
+  deactivatedAt DateTime?
+  createdBy     User          @relation("CreatedBy", fields: [createdById], references: [id])
+  createdById   Int
+  createdAt     DateTime      @default(now())
 
   members      ProjectMember[]
   invites      ProjectInvite[]
   tasks        Task[]
   activityLogs ActivityLog[]
+
+  @@index([createdById])
+  @@index([deactivatedAt])
+  @@index([status])
 }
 
 model ProjectMember {
@@ -89,43 +96,60 @@ model ProjectMember {
   joinedAt  DateTime @default(now())
 
   @@unique([projectId, userId])
+  @@index([userId])
+  @@index([role])
 }
 
 model ProjectInvite {
-  id            Int          @id @default(autoincrement())
-  project       Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId     Int
-  invitedBy     User         @relation("InvitedBy", fields: [invitedById], references: [id])
-  invitedById   Int
-  invitedEmail  String
-  token         String       @unique @default(uuid())
-  status        InviteStatus @default(PENDING)
-  createdAt     DateTime     @default(now())
-  expiresAt     DateTime
-  acceptedAt    DateTime?
-  acceptedBy    User?        @relation("AcceptedBy", fields: [acceptedById], references: [id])
-  acceptedById  Int?
+  id           Int          @id @default(autoincrement())
+  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId    Int
+  invitedBy    User         @relation("InvitedBy", fields: [invitedById], references: [id])
+  invitedById  Int
+  invitedEmail String
+  token        String       @unique @default(uuid())
+  status       InviteStatus @default(PENDING)
+  createdAt    DateTime     @default(now())
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  acceptedBy   User?        @relation("AcceptedBy", fields: [acceptedById], references: [id])
+  acceptedById Int?
+
+  @@index([projectId])
+  @@index([status])
+  @@index([invitedEmail])
+  @@index([invitedById])
 }
 
 model Task {
-  id            Int          @id @default(autoincrement())
-  project       Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId     Int
-  title         String
-  description   String?
-  tags          String[]     @default([])
-  status        TaskStatus   @default(TODO)
-  priority      TaskPriority @default(MEDIUM)
-  assignee      User?        @relation("AssignedTo", fields: [assigneeId], references: [id])
-  assigneeId    Int?
-  createdBy     User         @relation("TaskCreatedBy", fields: [createdById], references: [id])
-  createdById   Int
-  dueDate       DateTime?
-  createdAt     DateTime     @default(now())
-  startedAt     DateTime?
-  completedAt   DateTime?
+  id          Int          @id @default(autoincrement())
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   Int
+  title       String
+  description String?
+  tags        String[]     @default([])
+  status      TaskStatus   @default(TODO)
+  priority    TaskPriority @default(MEDIUM)
+  assignee    User?        @relation("AssignedTo", fields: [assigneeId], references: [id])
+  assigneeId  Int?
+  createdBy   User         @relation("TaskCreatedBy", fields: [createdById], references: [id])
+  createdById Int
+  dueDate     DateTime?
+  createdAt   DateTime     @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
 
   statusHistory TaskStatusHistory[]
+
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([createdById])
+  @@index([projectId, status])
+  @@index([projectId, assigneeId, status])
+  @@index([projectId, completedAt])
+  @@index([completedAt])
 }
 
 model TaskStatusHistory {
@@ -137,6 +161,10 @@ model TaskStatusHistory {
   fromStatus  TaskStatus
   toStatus    TaskStatus
   changedAt   DateTime   @default(now())
+
+  @@index([taskId])
+  @@index([changedAt])
+  @@index([changedById])
 }
 
 model ActivityLog {
@@ -150,4 +178,7 @@ model ActivityLog {
   entityId   Int?
   metadata   Json?
   createdAt  DateTime @default(now())
+
+  @@index([projectId, createdAt])
+  @@index([userId])
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Input } from '$lib/components/ui/input';
+	import { tick } from 'svelte';
 
 	let {
 		value = $bindable(),
@@ -17,7 +18,8 @@
 	let suggestions = $state<{ id: number; name: string; email: string }[]>([]);
 	let showSuggestions = $state(false);
 	let debounceTimer: ReturnType<typeof setTimeout>;
-	let containerEl: HTMLDivElement;
+	let inputEl: HTMLInputElement | null = null;
+	let dropdownStyle = $state('');
 
 	let lastSyncedValue = $state<string | null>(null);
 
@@ -32,7 +34,33 @@
 		}
 	});
 
+	function clickOutside(node: HTMLElement) {
+		function handler(e: MouseEvent) {
+			if (!node.contains(e.target as Node)) {
+				showSuggestions = false;
+			}
+		}
+		document.addEventListener('click', handler, true);
+		return { destroy() { document.removeEventListener('click', handler, true); } };
+	}
+
+	let action: ReturnType<typeof clickOutside> | undefined;
+
+	$effect(() => {
+		action?.destroy();
+		if (inputEl) action = clickOutside(inputEl);
+		return () => action?.destroy();
+	});
+
+	function repositionDropdown() {
+		if (!inputEl) return;
+		const rect = inputEl.getBoundingClientRect();
+		const gap = 4;
+		dropdownStyle = `position:fixed;left:${rect.left}px;width:${rect.width}px;top:${rect.bottom + gap}px;max-height:min(30vh, 320px);overflow-y:auto;z-index:9999`;
+	}
+
 	async function search() {
+		repositionDropdown();
 		if (members) {
 			suggestions = members
 				.map((m) => m.user)
@@ -71,21 +99,11 @@
 		query = members ? user.name : user.email;
 		showSuggestions = false;
 	}
-
-	function onClickOutside(e: MouseEvent) {
-		if (containerEl && !containerEl.contains(e.target as Node)) {
-			showSuggestions = false;
-		}
-	}
-
-	$effect(() => {
-		document.addEventListener('click', onClickOutside);
-		return () => document.removeEventListener('click', onClickOutside);
-	});
 </script>
 
-<div bind:this={containerEl} class="relative">
+<div class="relative">
 	<Input
+		bind:ref={inputEl}
 		bind:value={query}
 		oninput={onInput}
 		onfocus={() => suggestions.length > 0 && (showSuggestions = true)}
@@ -94,7 +112,8 @@
 
 	{#if showSuggestions && suggestions.length > 0}
 		<div
-			class="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border bg-background shadow-lg"
+			style={dropdownStyle}
+			class="rounded-lg border bg-background shadow-lg"
 		>
 			{#each suggestions as user (user.id)}
 				<button

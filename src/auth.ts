@@ -24,17 +24,19 @@ if (env.USE_MOCK_SSO) {
 
 export const { handle, signIn, signOut } = SvelteKitAuth({
 	providers: providers,
-	trustHost: true,
+	trustHost: !env.AUTH_URL,
 
 	callbacks: {
 		async session({ session }) {
 			if (!session.user.email) return session;
 
 			const dbUser = await prisma.user.findUnique({
-				where: { email: session.user.email }
+				where: { email: session.user.email },
+				select: { id: true, isSuperAdmin: true, deactivatedAt: true }
 			});
 
 			if (dbUser) {
+				if (dbUser.deactivatedAt) return session;
 				session.user.id = String(dbUser.id);
 				session.user.isSuperAdmin = dbUser.isSuperAdmin;
 			}

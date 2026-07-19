@@ -13,6 +13,8 @@
 			users: AdminUser[];
 			meta: { page: number; limit: number; totalPages: number };
 			q: string;
+			sort: string;
+			order: string;
 		};
 	}>();
 
@@ -21,8 +23,8 @@
 	let limit = $state(10);
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-	let sortField = $state<'name' | 'role' | 'status' | 'created'>('name');
-	let sortDir = $state<'asc' | 'desc'>('asc');
+	let sortField = $state(data.sort);
+	let sortDir = $state(data.order as 'asc' | 'desc');
 
 	let confirmAction: {
 		type: 'superAdmin' | 'deactivate' | 'reactivate';
@@ -36,39 +38,23 @@
 		search = data.q;
 		currentPage = data.meta.page;
 		limit = data.meta.limit;
+		sortField = data.sort;
+		sortDir = data.order as 'asc' | 'desc';
 	});
 
-	function handleSortClick(field: typeof sortField) {
-		if (sortField === field) {
-			sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-		} else {
-			sortField = field;
-			sortDir = 'asc';
-		}
+	function handleSortClick(field: string) {
+		const newDir = sortField === field && sortDir === 'asc' ? 'desc' : 'asc';
+		const params = new URLSearchParams({ page: String(currentPage), limit: String(limit), sort: field, order: newDir });
+		if (search) params.set('q', search);
+		goto(`?${params}`, { keepFocus: true, replaceState: true });
 	}
-
-	let sorted = $derived.by(() => {
-		return [...data.users].sort((a, b) => {
-			let cmp = 0;
-			if (sortField === 'name') {
-				cmp = a.name.localeCompare(b.name);
-			} else if (sortField === 'role') {
-				cmp = Number(b.isSuperAdmin) - Number(a.isSuperAdmin);
-			} else if (sortField === 'status') {
-				cmp = Number(!!a.deactivatedAt) - Number(!!b.deactivatedAt);
-			} else if (sortField === 'created') {
-				cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-			}
-			return sortDir === 'asc' ? cmp : -cmp;
-		});
-	});
 
 	function onSearchInput(value: string) {
 		search = value;
 		clearTimeout(debounceTimer);
 		debounceTimer = setTimeout(() => {
 			currentPage = 1;
-			const params = new URLSearchParams({ page: '1', limit: String(limit) });
+			const params = new URLSearchParams({ page: '1', limit: String(limit), sort: sortField, order: sortDir });
 			if (value) params.set('q', value);
 			goto(`?${params}`, { keepFocus: true, replaceState: true });
 		}, 300);
@@ -77,12 +63,12 @@
 	function clearSearch() {
 		search = '';
 		currentPage = 1;
-		const params = new URLSearchParams({ page: '1', limit: String(limit) });
+		const params = new URLSearchParams({ page: '1', limit: String(limit), sort: sortField, order: sortDir });
 		goto(`?${params}`, { keepFocus: true });
 	}
 
 	function reload() {
-		const params = new URLSearchParams({ page: String(currentPage), limit: String(limit) });
+		const params = new URLSearchParams({ page: String(currentPage), limit: String(limit), sort: sortField, order: sortDir });
 		if (search) params.set('q', search);
 		goto(`?${params}`, { keepFocus: true });
 	}
@@ -169,7 +155,7 @@
 							variant={sortField === field ? 'secondary' : 'ghost'}
 							size="sm"
 							class="h-8 gap-1 text-xs"
-							onclick={() => handleSortClick(field as typeof sortField)}
+							onclick={() => handleSortClick(field)}
 						>
 							{label}
 							{#if sortField === field}
@@ -197,7 +183,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each sorted as user (user.id)}
+					{#each data.users as user (user.id)}
 						<tr
 							class="border-t transition-colors hover:bg-muted/20 {user.deactivatedAt
 								? 'opacity-50'
@@ -269,7 +255,7 @@
 			</table>
 		</div>
 
-		{#if sorted.length === 0}
+		{#if data.users.length === 0}
 			<p class="mt-6 text-center text-sm text-muted-foreground">
 				{data.q ? `No users matching "${data.q}"` : 'No users found'}
 			</p>

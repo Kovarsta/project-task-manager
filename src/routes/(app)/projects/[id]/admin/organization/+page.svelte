@@ -119,6 +119,7 @@
 	}
 
 	async function deleteProject() {
+		if (deleteConfirmName !== data.project.name) return;
 		const res = await fetch(`/api/projects/${projectId}`, { method: 'DELETE' });
 		if (!res.ok) {
 			const err = await res.json();

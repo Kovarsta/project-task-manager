@@ -4,20 +4,21 @@ import { requireAuth } from '$lib/server/auth';
 import { logActivity } from '$lib/server/activity';
 import { sanitizeHtml } from '$lib/sanitize';
 import { projectSearchFilter } from '$lib/server/project-search';
+import type { Prisma } from '@prisma/client';
 import type { RequestEvent } from '@sveltejs/kit';
 
 // GET: View all projects
 export async function GET(event: RequestEvent) {
 	const user = await requireAuth(event);
 
-	const page = Number(event.url.searchParams.get('page') ?? 1);
-	const limit = Number(event.url.searchParams.get('limit') ?? 20);
+	const page = Math.max(1, Number(event.url.searchParams.get('page') ?? 1));
+	const limit = Math.min(50, Math.max(1, Number(event.url.searchParams.get('limit') ?? 20)));
 	const skip = (page - 1) * limit;
 	const q = event.url.searchParams.get('q') ?? '';
 
-	function searchFilter(where: Record<string, unknown>) {
-		if (!q) return where;
-		return { ...where, ...projectSearchFilter(q) } as typeof where;
+	function searchFilter(input: Prisma.ProjectWhereInput) {
+		if (!q) return input;
+		return { ...input, ...projectSearchFilter(q) };
 	}
 
 	const myWhere = searchFilter({
@@ -31,54 +32,47 @@ export async function GET(event: RequestEvent) {
 		deactivatedAt: null
 	});
 
-	const [myProjects, myTotal] = await Promise.all([
+	const [myProjects, myTotal, sharedProjects, sharedTotal] = await Promise.all([
 		prisma.project.findMany({
-			where: myWhere as any,
+			where: myWhere,
 			include: { _count: { select: { tasks: { where: { status: { not: 'DONE' } } } } } },
 			orderBy: { createdAt: 'desc' },
 			skip,
 			take: limit
 		}),
-		prisma.project.count({ where: myWhere as any })
-	]);
-
-	const [sharedProjects, sharedTotal] = await Promise.all([
+		prisma.project.count({ where: myWhere }),
 		prisma.project.findMany({
-			where: sharedWhere as any,
+			where: sharedWhere,
 			include: { _count: { select: { tasks: { where: { status: { not: 'DONE' } } } } } },
 			orderBy: { createdAt: 'desc' },
 			skip,
 			take: limit
 		}),
-		prisma.project.count({ where: sharedWhere as any })
+		prisma.project.count({ where: sharedWhere })
 	]);
 
-	// Augment each project with attention-sort data (tasks assigned to current user)
+	// Aggregate attention data: count of assigned tasks + earliest due per project
 	const allProjectIds = [...myProjects, ...sharedProjects].map((p) => p.id);
-
-	const assignedTasks = await prisma.task.findMany({
-		where: {
-			projectId: { in: allProjectIds },
-			assigneeId: user.id,
-			status: { not: 'DONE' }
-		},
-		select: { projectId: true, dueDate: true }
-	});
+	const attentionAgg = allProjectIds.length > 0
+		? await prisma.task.groupBy({
+			by: ['projectId'],
+			where: {
+				projectId: { in: allProjectIds },
+				assigneeId: user.id,
+				status: { not: 'DONE' }
+			},
+			_count: { projectId: true },
+			_min: { dueDate: true }
+		})
+		: [];
 
 	// Build lookup: projectId -> { count, earliestDue }
 	const attentionMap = new Map<number, { count: number; earliestDue: string | null }>();
-	for (const task of assignedTasks) {
-		const existing = attentionMap.get(task.projectId) ?? { count: 0, earliestDue: null };
-		const dueDateStr = task.dueDate ? task.dueDate.toISOString() : null;
-		const earliestDue =
-			existing.earliestDue === null
-				? dueDateStr
-				: dueDateStr === null
-					? existing.earliestDue
-					: dueDateStr < existing.earliestDue
-						? dueDateStr
-						: existing.earliestDue;
-		attentionMap.set(task.projectId, { count: existing.count + 1, earliestDue });
+	for (const row of attentionAgg) {
+		attentionMap.set(row.projectId, {
+			count: row._count.projectId,
+			earliestDue: row._min.dueDate ? row._min.dueDate.toISOString() : null
+		});
 	}
 
 	function augment(projects: typeof myProjects) {

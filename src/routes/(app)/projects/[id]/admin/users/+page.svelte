@@ -311,7 +311,7 @@
 
 <!-- Invite modal -->
 <Dialog.Root bind:open={showInvite}>
-	<Dialog.Content class="max-w-sm">
+	<Dialog.Content class="max-w-sm max-h-none overflow-y-visible">
 		<Dialog.Header>
 			<Dialog.Title>Invite a member</Dialog.Title>
 		</Dialog.Header>

@@ -4,6 +4,13 @@ import { error } from '@sveltejs/kit';
 
 // TODO: Translate all of the errors into Vietnamese
 export async function requireAuth(event: RequestEvent) {
+	if (event.locals.userId) {
+		const user = await prisma.user.findUnique({
+			where: { id: event.locals.userId }
+		});
+		if (user) return user;
+	}
+
 	const session = await event.locals.auth();
 	if (!session?.user?.email) throw error(401, 'Unauthorized');
 
@@ -21,63 +28,53 @@ export async function requireSuperAdmin(event: RequestEvent) {
 	return user;
 }
 
-async function assertProjectActive(projectId: number) {
-	const project = await prisma.project.findUnique({
-		where: { id: projectId },
-		select: { deactivatedAt: true }
-	});
-	if (project?.deactivatedAt) throw error(404, 'Project not found');
-}
+/**
+ * Single-query lookup: finds the user (via `event.locals.userId` or session)
+ * and their project membership in one call.
+ */
+async function getAuthAndMember(event: RequestEvent, projectId: number) {
+	let userId = event.locals.userId;
 
-export async function requireProjectAdmin(event: RequestEvent, projectId: number) {
-	const user = await requireAuth(event);
-	await assertProjectActive(projectId);
+	if (!userId) {
+		const session = await event.locals.auth();
+		if (!session?.user?.email) throw error(401, 'Unauthorized');
+		const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+		if (!user) throw error(401, 'Unauthorized');
+		userId = user.id;
+	}
 
-	const member = await prisma.projectMember.findUnique({
-		where: {
-			projectId_userId: {
-				projectId,
-				userId: user.id
+	// Single query: fetch user and their membership for this project
+	const result = await prisma.user.findUnique({
+		where: { id: userId },
+		include: {
+			memberships: {
+				where: { projectId },
+				include: { project: { select: { deactivatedAt: true } } }
 			}
 		}
 	});
 
+	if (!result) throw error(401, 'Unauthorized');
+	const member = result.memberships[0];
 	if (!member) throw error(403, 'Forbidden');
+	if (member.project.deactivatedAt) throw error(404, 'Project not found');
+
+	return { user: result, member };
+}
+
+export async function requireProjectAdmin(event: RequestEvent, projectId: number) {
+	const { user, member } = await getAuthAndMember(event, projectId);
 	if (member.role !== 'ADMIN' && !member.isOwner) throw error(403, 'Forbidden');
 	return user;
 }
 
 export async function requireProjectOwner(event: RequestEvent, projectId: number) {
-	const user = await requireAuth(event);
-	await assertProjectActive(projectId);
-
-	const member = await prisma.projectMember.findUnique({
-		where: {
-			projectId_userId: {
-				projectId,
-				userId: user.id
-			}
-		}
-	});
-
-	if (!member) throw error(403, 'Forbidden');
+	const { user, member } = await getAuthAndMember(event, projectId);
 	if (!member.isOwner) throw error(403, 'Forbidden');
 	return user;
 }
 
 export async function requireProjectMember(event: RequestEvent, projectId: number) {
-	const user = await requireAuth(event);
-	await assertProjectActive(projectId);
-
-	const member = await prisma.projectMember.findUnique({
-		where: {
-			projectId_userId: {
-				projectId,
-				userId: user.id
-			}
-		}
-	});
-
-	if (!member) throw error(403, 'Forbidden');
+	const { user, member } = await getAuthAndMember(event, projectId);
 	return { user, member };
 }

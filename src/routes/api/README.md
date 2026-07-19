@@ -49,7 +49,7 @@ Delete a task. Requires admin.
 ## Members
 
 ### `GET /api/projects/[id]/members`
-List project members with user data, ordered by join date, each with assigned task count. Supports `?page=`, `?limit=`, `?q=` (name/email search), `?role=` (`ADMIN`/`MEMBER`). Returns `memberCount` and `adminCount` in meta for stats.
+List project members with user data, each with assigned task count. Ordered by owner first, then admins, then by join date (with `id` tiebreaker) for deterministic pagination. Supports `?page=`, `?limit=`, `?q=` (name/email search), `?role=` (`ADMIN`/`MEMBER`). Returns `memberCount` and `adminCount` in meta for stats.
 
 ### `GET /api/projects/[id]/members/[userId]`
 Search users to invite. Accepts `?q=` (min 2 chars), returns up to 5 active matching users.
@@ -91,7 +91,7 @@ Transfer ownership to another member. Requires current owner. Accepts `userId`.
 Dashboard summary for a project. Returns total tasks/members, 7-day completion stats, counts by status, overdue count, top urgent tasks, recent activity (last 5), and chart data.
 
 ### `GET /api/projects/[id]/kanban`
-Tasks grouped by status (`TODO`/`DOING`/`DONE`) for a kanban board. Each group ordered by creation date.
+Paginated tasks grouped by status (`TODO`/`DOING`/`DONE`) for a kanban board. Supports `?page=`, `?q=` (search title/assignee name). Ordered by `createdAt` desc with `id` tiebreaker for deterministic pagination.
 
 ### `GET /api/projects/[id]/activity`
 Paginated activity log for a project. Supports `?page=`, `?limit=`. Returns actions (task create/complete/update/delete, member join/remove, role changes, invites) with user and timestamp. Includes `meta.total` for pagination.

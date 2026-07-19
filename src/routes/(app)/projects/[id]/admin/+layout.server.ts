@@ -1,12 +1,10 @@
 import type { LayoutServerLoad } from './$types';
-import { serverFetch } from '$lib/server/api';
-import { redirect, error } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
 
 export const load: LayoutServerLoad = async (event) => {
-	const session = await event.locals.auth();
-	if (!session) throw redirect(303, '/login');
-
-	const project = await serverFetch(event, `/api/projects/${event.params.id}`);
+	const parentData = await event.parent();
+	const { project, session } = parentData;
+	if (!session) throw error(401, 'Unauthorized');
 
 	const myMembership = project.members?.find(
 		(m: { user: { id: number }; role: string; isOwner: boolean }) =>
