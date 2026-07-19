@@ -24,7 +24,7 @@ if (env.USE_MOCK_SSO) {
 
 export const { handle, signIn, signOut } = SvelteKitAuth({
 	providers: providers,
-	trustHost: !env.AUTH_URL,
+	trustHost: true,
 
 	callbacks: {
 		async session({ session }) {
