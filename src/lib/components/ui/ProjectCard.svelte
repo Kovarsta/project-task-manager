@@ -2,6 +2,7 @@
 	import { Calendar, ListTodo } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import type { Project } from '$lib/type';
+	import { formatDate } from '$lib/utils';
 
 	let {
 		project,
@@ -131,7 +132,7 @@
 			</p>
 			{#if project._earliestDue}
 				<p class="text-xxs text-muted-foreground">
-					due {new Date(project._earliestDue).toLocaleDateString('en-GB')}
+					due {formatDate(project._earliestDue)}
 				</p>
 			{/if}
 		{/if}

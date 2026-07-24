@@ -7,9 +7,13 @@ export const load: PageServerLoad = async (event) => {
 
 	const page = Number(event.url.searchParams.get('page') ?? 1);
 	const limit = Number(event.url.searchParams.get('limit') ?? 20);
+	const q = event.url.searchParams.get('q') ?? '';
 
 	const [tasksRes, project] = await Promise.all([
-		serverFetch(event, `/api/projects/${event.params.id}/tasks?page=${page}&limit=${limit}`),
+		serverFetch(
+			event,
+			`/api/projects/${event.params.id}/tasks?page=${page}&limit=${limit}${q ? `&q=${encodeURIComponent(q)}` : ''}`
+		),
 		serverFetch(event, `/api/projects/${event.params.id}`)
 	]);
 
@@ -21,6 +25,7 @@ export const load: PageServerLoad = async (event) => {
 		tasks: tasksRes.tasks,
 		meta: tasksRes.meta,
 		project,
-		isAdmin
+		isAdmin,
+		query: q
 	};
 };

@@ -26,12 +26,12 @@ Built as an internship project for Van Lang University.
 - **Rich text descriptions** - TipTap editor with HTML rendering and server-side sanitization
 - **Role-based access control** - Super Admin, Project Admin, and Member roles with distinct permissions; admins can only demote themselves
 - **Kanban board** - drag and drop tasks across Todo / Doing / Done columns
-- **Task management** - create, edit, assign, prioritize, and track tasks with due dates; deadlines show days remaining with color coding
+- **Task management** - create, edit, assign, prioritize, and track tasks with due dates; deadlines show days remaining with color coding; server-side search across title, assignee, and tags with debounce
 - **Activity log** - per-project activity timeline with pagination tracking task and member changes
 - **Invite system** - invite members via shareable link with email notification, 7-day expiry, domain restriction, and duplicate detection
 - **Members page** - paginated member list with server-side search and role filtering
 - **Weekly statistics** - Chart.js donut chart showing tasks created vs completed in the last 7 days
-- **Tags and deadlines** - tag projects and tasks with color-coded labels, set deadlines with fuzzy date-aware search
+- **Tags and deadlines** - tag projects and tasks with color-coded labels, set deadlines with color-coded due date display
 - **Super Admin panel** - system-wide project and user management with pagination, search, and deactivation controls
 - **Pagination throughout** - all list endpoints support paginated responses with meta
 - **Microsoft SSO ready** - swap provider via environment variables, zero code changes required

@@ -125,7 +125,7 @@
 				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 				<input
 					type="text"
-					placeholder="Search projects..."
+					placeholder="Search by name, owner, description, tags, or date..."
 					value={search}
 					oninput={(e) => onSearchInput(e.currentTarget.value)}
 					class="w-full rounded-lg border border-input bg-background py-2 pr-4 pl-10 text-sm placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none"

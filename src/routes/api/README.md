@@ -30,7 +30,7 @@ Deactivate (soft delete) a project. Requires admin. Restores owner-only restrict
 ## Tasks
 
 ### `GET /api/projects/[id]/tasks`
-List tasks in a project. Supports `?q=` (title), `?status=`, `?priority=`, `?assignee=`, `?tag=`, `?sort=`/`?order=`, `?page=`, `?limit=`.
+List tasks in a project. Supports `?q=` (search title, assignee name, tags, and due dates — supports ISO `YYYY-MM-DD`, EU `DD/MM/YYYY`, `MM/YYYY`, and `YYYY` formats), `?status=`, `?priority=`, `?assignee=`, `?tag=`, `?sort=`/`?order=`, `?page=`, `?limit=`.
 
 ### `POST /api/projects/[id]/tasks`
 Create a task. Requires admin. Required: `title` (max 100). Optional: `description` (sanitized HTML, max 2000), `tags` (max 10), `dueDate` (no past dates), `assigneeId`, `status`, `priority`.
@@ -91,7 +91,7 @@ Transfer ownership to another member. Requires current owner. Accepts `userId`.
 Dashboard summary for a project. Returns total tasks/members, 7-day completion stats, counts by status, overdue count, top urgent tasks, recent activity (last 5), and chart data.
 
 ### `GET /api/projects/[id]/kanban`
-Paginated tasks grouped by status (`TODO`/`DOING`/`DONE`) for a kanban board. Supports `?page=`, `?q=` (search title/assignee name). Ordered by `createdAt` desc with `id` tiebreaker for deterministic pagination.
+Paginated tasks grouped by status (`TODO`/`DOING`/`DONE`) for a kanban board. Supports `?page=`, `?q=` (search title, assignee name, tags, and due dates). Ordered by priority desc, due date asc, createdAt asc with `id` tiebreaker for deterministic pagination.
 
 ### `GET /api/projects/[id]/activity`
 Paginated activity log for a project. Supports `?page=`, `?limit=`. Returns actions (task create/complete/update/delete, member join/remove, role changes, invites) with user and timestamp. Includes `meta.total` for pagination.
@@ -121,7 +121,7 @@ Alternate accept path. Same as `POST /api/invites/[token]` but also logs `member
 ## Admin - Projects
 
 ### `GET /api/admin/projects`
-List all projects (super admin). Supports `?page=`, `?limit=`, `?q=`.
+List all projects (super admin). Supports `?page=`, `?limit=`, `?q=` (search name, tags, description, owner name, owner email, deadline, and creation date).
 
 ### `PATCH /api/admin/projects/[id]`
 Deactivate or reactivate a project. Accepts `{ action: "deactivate" | "reactivate" }`. Requires super admin.

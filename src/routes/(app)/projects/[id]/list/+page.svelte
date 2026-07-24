@@ -6,6 +6,7 @@
 	import TaskDetailModal from '$lib/components/ui/TaskDetailModal.svelte';
 	import Pagination from '$lib/components/ui/Pagination.svelte';
 	import type { Task, Project } from '$lib/type';
+	import { formatDate } from '$lib/utils';
 
 	let { data } = $props<{
 		data: {
@@ -13,10 +14,11 @@
 			meta: { page: number; limit: number; total: number; totalPages: number };
 			project: Project;
 			isAdmin: boolean;
+			query: string;
 		};
 	}>();
 
-	let search = $state('');
+	let search = $state(data.query);
 	let sortField = $state<keyof Task>('title');
 	let sortDir = $state<'asc' | 'desc'>('asc');
 
@@ -26,23 +28,29 @@
 	let currentPage = $state(data.meta.page);
 	let limit = $state(data.meta.limit);
 
-	function reload() {
-		goto(`?page=${currentPage}&limit=${limit}`, { keepFocus: true });
+	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+	function submitSearch(value: string) {
+		clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => {
+			currentPage = 1;
+			const params = new URLSearchParams({ page: '1', limit: String(limit) });
+			if (value.trim()) params.set('q', value.trim());
+			goto(`?${params}`, { keepFocus: true });
+		}, 300);
 	}
 
-	let filtered = $derived.by(() => {
-		let result = data.tasks.filter(
-			(t: Task) =>
-				t.title.toLowerCase().includes(search.toLowerCase()) ||
-				t.assignee?.name.toLowerCase().includes(search.toLowerCase()) ||
-				(t.dueDate && new Date(t.dueDate).toLocaleDateString().includes(search)) ||
-				t.tags.some((tag) => tag.toLowerCase().includes(search.toLowerCase()))
-		);
+	function reload() {
+		const params = new URLSearchParams({ page: String(currentPage), limit: String(limit) });
+		if (search.trim()) params.set('q', search.trim());
+		goto(`?${params}`, { keepFocus: true });
+	}
 
-		result = [...result].sort((a, b) => {
+	let sorted = $derived.by(() => {
+		const result = [...data.tasks];
+		result.sort((a, b) => {
 			let aVal = '';
 			let bVal = '';
-
 			if (sortField === 'assignee') {
 				aVal = a.assignee?.name ?? '';
 				bVal = b.assignee?.name ?? '';
@@ -53,11 +61,8 @@
 				aVal = String(a[sortField] ?? '');
 				bVal = String(b[sortField] ?? '');
 			}
-
-			const cmp = aVal.localeCompare(bVal);
-			return sortDir === 'asc' ? cmp : -cmp;
+			return sortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
 		});
-
 		return result;
 	});
 
@@ -116,8 +121,9 @@
 			<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 			<Input
 				bind:value={search}
-				placeholder="Search by name, assignee, due date, or tags..."
+				placeholder="Search by name, assignee, due date, tags..."
 				class="pl-9"
+				oninput={() => submitSearch(search)}
 				onkeydown={(e: KeyboardEvent) => e.key === ' ' && search === '' && e.preventDefault()}
 			/>
 		</div>
@@ -148,7 +154,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each filtered as task (task.id)}
+					{#each sorted as task (task.id)}
 						<tr class="cursor-pointer border-t hover:bg-accent/50" onclick={() => openTask(task)}>
 							<td class="max-w-[220px] truncate px-4 py-2">
 								<div class="truncate">
@@ -164,7 +170,7 @@
 							<td class="px-4 py-2">{task.status}</td>
 							<td class="px-4 py-2 font-medium {priorityColors[task.priority]}">{task.priority}</td>
 							<td class="px-4 py-2">
-								{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '-'}
+								{task.dueDate ? formatDate(task.dueDate) : '-'}
 							</td>
 							<td class="px-4 py-2 text-muted-foreground">
 								{task.assignee?.name ?? '-'}
@@ -197,7 +203,7 @@
 			</table>
 		</div>
 
-		{#if filtered.length === 0}
+		{#if sorted.length === 0}
 			<p class="mt-4 text-sm text-muted-foreground">No tasks found</p>
 		{/if}
 	</div>

@@ -9,6 +9,7 @@
 	import { onMount } from 'svelte';
 	import TaskDetailModal from '$lib/components/ui/TaskDetailModal.svelte';
 	import CreateTaskModal from '$lib/components/ui/CreateTaskModal.svelte';
+	import { formatDate } from '$lib/utils';
 
 	let { data } = $props<{
 		data: {
@@ -99,14 +100,6 @@
 			return words.slice(0, 5).join(' ') + '...';
 		}
 		return plainText;
-	}
-
-	function formatDate(dateStr: string): string {
-		const d = new Date(dateStr);
-		const day = String(d.getDate()).padStart(2, '0');
-		const month = String(d.getMonth() + 1).padStart(2, '0');
-		const year = d.getFullYear();
-		return `${day}/${month}/${year}`;
 	}
 
 	// --- Lazy column loading ---
@@ -213,7 +206,7 @@
 				<Input
 					bind:value={columnSearch[col.key]}
 					oninput={() => onSearchInput(col.key)}
-					placeholder="Search"
+					placeholder="Search by name, assignee, due date, tags..."
 					class="pl-9"
 					onkeydown={(e: KeyboardEvent) =>
 						e.key === ' ' && columnSearch[col.key] === '' && e.preventDefault()}

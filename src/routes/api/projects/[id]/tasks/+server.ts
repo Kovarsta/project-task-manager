@@ -6,6 +6,7 @@ import { sanitizeHtml } from '$lib/sanitize';
 import type { RequestEvent } from '@sveltejs/kit';
 import { TaskStatus, TaskPriority } from '@prisma/client';
 import { parseIdParam } from '$lib/server/helpers';
+import { taskSearchFilter } from '$lib/server/task-search';
 
 // GET: View all task
 export async function GET(event: RequestEvent) {
@@ -40,7 +41,7 @@ export async function GET(event: RequestEvent) {
 		...(priorityEnum && { priority: priorityEnum }),
 		...(assignee && { assigneeId: Number(assignee) }),
 		...(tag && { tags: { has: tag } }),
-		...(q && { title: { contains: q, mode: 'insensitive' as const } })
+		...(q && taskSearchFilter(q))
 	};
 
 	const [tasks, total] = await Promise.all([
