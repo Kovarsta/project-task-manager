@@ -20,7 +20,7 @@ export async function GET(event: RequestEvent) {
 		include: {
 			members: {
 				where: { userId: user.id },
-				include: { user: true }
+				include: { user: { select: { id: true, name: true, email: true } } }
 			},
 			_count: {
 				select: {

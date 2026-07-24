@@ -16,6 +16,7 @@ RUN pnpm build
 FROM node:22-alpine
 WORKDIR /app
 ENV CI=true
+ENV NODE_OPTIONS="--max-old-space-size=3072"
 RUN npm install -g pnpm
 
 COPY --from=build /app/build ./build

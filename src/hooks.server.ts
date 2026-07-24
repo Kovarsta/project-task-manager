@@ -2,6 +2,11 @@ import { handle as authHandle } from './auth';
 import { sequence } from '@sveltejs/kit/hooks';
 import type { Handle } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
+import { gzip, brotliCompress } from 'node:zlib';
+import { promisify } from 'node:util';
+
+const gzipAsync = promisify(gzip);
+const brotliAsync = promisify(brotliCompress);
 
 // --- Global error handler (sanitize Prisma + unexpected errors) ---
 export function handleError({
@@ -92,4 +97,51 @@ const authGuard: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-export const handle = sequence(rateLimiter, authHandle, authGuard);
+// --- Response compression + static-asset caching ---
+const COMPRESSIBLE = /^(text\/|application\/(?:json|javascript|xml|svg|font|wasm))/;
+const MIN_SIZE = 1024;
+
+const compressAndCache: Handle = async ({ event, resolve }) => {
+	const response = await resolve(event);
+
+	// --- Cache-Control for immutable hashed assets ---
+	if (event.url.pathname.startsWith('/_app/immutable/')) {
+		const headers = new Headers(response.headers);
+		headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+		return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+	}
+
+	// --- Skip compression for non-compressible, small, or already-encoded ---
+	const contentType = response.headers.get('content-type') || '';
+	if (
+		response.headers.has('content-encoding') ||
+		!COMPRESSIBLE.test(contentType)
+	) {
+		return response;
+	}
+
+	const accept = event.request.headers.get('accept-encoding') || '';
+	const body = Buffer.from(await response.arrayBuffer());
+	if (body.length < MIN_SIZE) return response;
+
+	const headers = new Headers(response.headers);
+	headers.set('Vary', 'Accept-Encoding');
+
+	if (accept.includes('br')) {
+		const compressed = await brotliAsync(body, { quality: 4 });
+		headers.set('Content-Encoding', 'br');
+		headers.set('Content-Length', String(compressed.length));
+		return new Response(compressed, { status: response.status, statusText: response.statusText, headers });
+	}
+
+	if (accept.includes('gzip')) {
+		const compressed = await gzipAsync(body);
+		headers.set('Content-Encoding', 'gzip');
+		headers.set('Content-Length', String(compressed.length));
+		return new Response(compressed, { status: response.status, statusText: response.statusText, headers });
+	}
+
+	return response;
+};
+
+export const handle = sequence(rateLimiter, authHandle, authGuard, compressAndCache);
