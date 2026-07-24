@@ -18,7 +18,7 @@ export async function DELETE(event: RequestEvent) {
 	// Only allows so if they are a member already
 	const target = await prisma.projectMember.findUnique({
 		where: { projectId_userId: { projectId, userId: targetId } },
-		include: { user: true }
+		include: { user: { select: { id: true, name: true, email: true } } }
 	});
 
 	if (!target) throw error(404, 'Member not found');
@@ -77,7 +77,7 @@ export async function PATCH(event: RequestEvent) {
 
 	const target = await prisma.projectMember.findUnique({
 		where: { projectId_userId: { projectId, userId: targetId } },
-		include: { user: true }
+		include: { user: { select: { id: true, name: true, email: true } } }
 	});
 
 	if (!target) throw error(404, 'Member not found');
@@ -98,7 +98,7 @@ export async function PATCH(event: RequestEvent) {
 	const updated = await prisma.projectMember.update({
 		where: { projectId_userId: { projectId, userId: targetId } },
 		data: { role: body.role },
-		include: { user: true }
+		include: { user: { select: { id: true, name: true, email: true } } }
 	});
 
 	await logActivity({

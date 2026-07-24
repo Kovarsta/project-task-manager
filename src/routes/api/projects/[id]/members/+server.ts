@@ -30,7 +30,7 @@ export async function GET(event: RequestEvent) {
 	const [members, total, memberCount, adminCount] = await Promise.all([
 		prisma.projectMember.findMany({
 			where,
-			include: { user: true },
+			include: { user: { select: { id: true, name: true, email: true } } },
 			orderBy: [{ isOwner: 'desc' }, { role: 'asc' }, { joinedAt: 'asc' }, { id: 'asc' }],
 			skip: (page - 1) * limit,
 			take: limit

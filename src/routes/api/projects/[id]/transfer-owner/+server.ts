@@ -16,7 +16,7 @@ export async function POST(event: RequestEvent) {
 
 	const target = await prisma.projectMember.findUnique({
 		where: { projectId_userId: { projectId, userId: targetId } },
-		include: { user: true }
+		include: { user: { select: { id: true, name: true, email: true } } }
 	});
 
 	if (!target) throw error(404, 'Member not found');
