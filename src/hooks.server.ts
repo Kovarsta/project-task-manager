@@ -15,7 +15,7 @@ export function handleError({
 }: {
 	error: unknown;
 	event: import('@sveltejs/kit').RequestEvent;
-	status?: number;
+	status: number;
 	message: string;
 }) {
 	// 404s (favicon, bots, etc.) — no logging needed
@@ -113,15 +113,16 @@ const compressAndCache: Handle = async ({ event, resolve }) => {
 
 	// --- Skip compression for non-compressible, small, or already-encoded ---
 	const contentType = response.headers.get('content-type') || '';
-	if (
-		response.headers.has('content-encoding') ||
-		!COMPRESSIBLE.test(contentType)
-	) {
+	if (response.headers.has('content-encoding') || !COMPRESSIBLE.test(contentType)) {
 		return response;
 	}
 
 	const accept = event.request.headers.get('accept-encoding') || '';
-	const body = Buffer.from(await response.arrayBuffer());
+	if (!accept.includes('br') && !accept.includes('gzip')) return response;
+
+	// Clone so we don't lock the original body stream for SvelteKit's internals
+	const clone = response.clone();
+	const body = Buffer.from(await clone.arrayBuffer());
 	if (body.length < MIN_SIZE) return response;
 
 	const headers = new Headers(response.headers);
@@ -134,14 +135,10 @@ const compressAndCache: Handle = async ({ event, resolve }) => {
 		return new Response(compressed, { status: response.status, statusText: response.statusText, headers });
 	}
 
-	if (accept.includes('gzip')) {
-		const compressed = await gzipAsync(body);
-		headers.set('Content-Encoding', 'gzip');
-		headers.set('Content-Length', String(compressed.length));
-		return new Response(compressed, { status: response.status, statusText: response.statusText, headers });
-	}
-
-	return response;
+	const compressed = await gzipAsync(body);
+	headers.set('Content-Encoding', 'gzip');
+	headers.set('Content-Length', String(compressed.length));
+	return new Response(compressed, { status: response.status, statusText: response.statusText, headers });
 };
 
 export const handle = sequence(rateLimiter, authHandle, authGuard, compressAndCache);
