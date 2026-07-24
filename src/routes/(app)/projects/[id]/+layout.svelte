@@ -14,6 +14,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import CreateTaskModal from '$lib/components/ui/CreateTaskModal.svelte';
 	import type { Project, ProjectMember } from '$lib/type';
+	import { formatDate } from '$lib/utils';
 	import type { Snippet } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -132,7 +133,7 @@
 								: 'text-muted-foreground'}"
 					>
 						<Calendar class="h-3.5 w-3.5" />
-						{new Date(data.project.deadline).toLocaleDateString('en-GB')}
+						{formatDate(data.project.deadline)}
 						- {remaining < 0 ? 'Overdue' : remaining === 0 ? 'Due today' : `${remaining}d left`}
 					</span>
 				{/if}

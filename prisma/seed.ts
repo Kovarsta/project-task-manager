@@ -13,15 +13,15 @@ function randomInt(min: number, max: number): number {
 
 function futureDate(daysFromNow: number): Date {
 	const d = new Date();
-	d.setDate(d.getDate() + daysFromNow);
-	d.setHours(0, 0, 0, 0);
+	d.setUTCDate(d.getUTCDate() + daysFromNow);
+	d.setUTCHours(0, 0, 0, 0);
 	return d;
 }
 
 function pastDate(daysAgo: number): Date {
 	const d = new Date();
-	d.setDate(d.getDate() - daysAgo);
-	d.setHours(0, 0, 0, 0);
+	d.setUTCDate(d.getUTCDate() - daysAgo);
+	d.setUTCHours(0, 0, 0, 0);
 	return d;
 }
 

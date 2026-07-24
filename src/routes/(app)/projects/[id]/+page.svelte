@@ -5,6 +5,7 @@
 	import type { Task } from '$lib/type';
 	import type { ActivityItem } from '$lib/activity';
 	import { describeActivity, timeAgo } from '$lib/activity';
+	import { formatDate, isOverdueDate } from '$lib/utils';
 	import { page } from '$app/state';
 
 	let { data } = $props<{
@@ -69,7 +70,7 @@
 
 	function isOverdue(dueDateStr: string | null) {
 		if (!dueDateStr) return false;
-		return new Date(dueDateStr) < new Date();
+		return isOverdueDate(dueDateStr);
 	}
 
 
@@ -164,7 +165,7 @@
 												? 'font-medium text-red-600'
 												: ''}"
 										>
-											Due {new Date(task.dueDate).toLocaleDateString()}
+											Due {formatDate(task.dueDate)}
 										</span>
 									{/if}
 									{#if task.assignee}

@@ -11,3 +11,13 @@ export type WithoutChild<T> = T extends { child?: any } ? Omit<T, 'child'> : T;
 export type WithoutChildren<T> = T extends { children?: any } ? Omit<T, 'children'> : T;
 export type WithoutChildrenOrChild<T> = WithoutChildren<WithoutChild<T>>;
 export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?: U | null };
+
+export function formatDate(isoStr: string): string {
+	const [y, m, d] = isoStr.split('T')[0].split('-');
+	return `${d}/${m}/${y}`;
+}
+
+export function isOverdueDate(dueDateStr: string): boolean {
+	const today = new Date().toISOString().split('T')[0];
+	return dueDateStr.split('T')[0] < today;
+}

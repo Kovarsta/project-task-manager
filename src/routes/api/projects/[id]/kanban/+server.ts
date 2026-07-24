@@ -4,6 +4,7 @@ import { requireProjectMember } from '$lib/server/auth';
 import type { RequestEvent } from '@sveltejs/kit';
 import { TaskStatus } from '@prisma/client';
 import { parseIdParam } from '$lib/server/helpers';
+import { taskSearchFilter } from '$lib/server/task-search';
 
 const PAGE_SIZE = 30;
 
@@ -21,17 +22,11 @@ export async function GET(event: RequestEvent) {
 		? (status as TaskStatus)
 		: undefined;
 
-	const where: Record<string, unknown> = {
+	const where = {
 		projectId,
-		...(statusFilter && { status: statusFilter })
+		...(statusFilter && { status: statusFilter }),
+		...(q && taskSearchFilter(q))
 	};
-
-	if (q) {
-		where.OR = [
-			{ title: { contains: q, mode: 'insensitive' } },
-			{ assignee: { name: { contains: q, mode: 'insensitive' } } }
-		];
-	}
 
 	const [tasks, total] = await Promise.all([
 		prisma.task.findMany({

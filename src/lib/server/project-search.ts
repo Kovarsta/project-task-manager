@@ -45,12 +45,15 @@ export function projectSearchFilter(q: string): Prisma.ProjectWhereInput {
 	const conditions: Prisma.ProjectWhereInput[] = [
 		{ name: { contains: q, mode: 'insensitive' } },
 		{ tags: { has: q.toLowerCase() } },
-		{ description: { contains: q, mode: 'insensitive' } }
+		{ description: { contains: q, mode: 'insensitive' } },
+		{ createdBy: { name: { contains: q, mode: 'insensitive' } } },
+		{ createdBy: { email: { contains: q, mode: 'insensitive' } } }
 	];
 
-	const dateRange = parseDateQuery(q);
-	if (dateRange) {
-		conditions.push({ deadline: dateRange });
+	const deadlineRange = parseDateQuery(q);
+	if (deadlineRange) {
+		conditions.push({ deadline: deadlineRange });
+		conditions.push({ createdAt: deadlineRange });
 	}
 
 	return { OR: conditions };
