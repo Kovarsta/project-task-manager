@@ -10,6 +10,7 @@
 	import RichTextEditor from '$lib/components/ui/RichTextEditor.svelte';
 	import NativeSelect from '$lib/components/ui/NativeSelect.svelte';
 	import { sanitizeHtml } from '$lib/sanitize';
+	import { tick } from 'svelte';
 
 	let dueDateInput = $state<HTMLInputElement | null>(null);
 	let errors = $state({ title: false, description: false });
@@ -72,6 +73,14 @@
 			dueDate = defaults.dueDate;
 			assigneeId = defaults.assigneeId;
 			errors = { title: false, description: false };
+			showConfirmClose = false;
+			// Re-snapshot description after TipTap normalizes the HTML
+			tick().then(() => {
+				if (open) defaults.description = description;
+			});
+		}
+		if (!open && wasOpen) {
+			showConfirmClose = false;
 		}
 		wasOpen = open;
 	});

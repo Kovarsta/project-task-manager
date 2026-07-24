@@ -77,8 +77,15 @@
 
 	$effect(() => {
 		if (open) {
+			title = '';
+			description = '';
+			tags = [];
 			status = defaultStatus;
+			priority = 'MEDIUM';
+			dueDate = '';
+			assigneeId = '';
 			errors = { title: false, description: false };
+			showConfirmClose = false;
 		}
 	});
 
