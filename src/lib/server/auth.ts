@@ -1,8 +1,8 @@
 import { prisma } from '../prisma';
 import type { RequestEvent } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
+import { cached } from './cache';
 
-// TODO: Translate all of the errors into Vietnamese
 export async function requireAuth(event: RequestEvent) {
 	if (event.locals.userId) {
 		const user = await prisma.user.findUnique({
@@ -44,14 +44,16 @@ async function getAuthAndMember(event: RequestEvent, projectId: number) {
 	}
 
 	// Single query: fetch user and their membership for this project
-	const result = await prisma.user.findUnique({
-		where: { id: userId },
-		include: {
-			memberships: {
-				where: { projectId },
-				include: { project: { select: { deactivatedAt: true } } }
+	const result = await cached(`auth:member:${userId}:${projectId}`, 10, async () => {
+		return prisma.user.findUnique({
+			where: { id: userId },
+			include: {
+				memberships: {
+					where: { projectId },
+					include: { project: { select: { deactivatedAt: true } } }
+				}
 			}
-		}
+		});
 	});
 
 	if (!result) throw error(401, 'Unauthorized');

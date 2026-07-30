@@ -28,4 +28,7 @@ vite.config.ts.timestamp-*
 # IDE
 .vscode
 
+# Scratch
+cookies.txt
+
 /prisma/src/generated/prisma

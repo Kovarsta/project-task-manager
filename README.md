@@ -12,10 +12,11 @@ Built as an internship project for Van Lang University.
 | -------- | ----------------------------------------------------------------- |
 | Frontend | SvelteKit 2, Svelte 5, TailwindCSS, shadcn-svelte                 |
 | Backend  | SvelteKit API routes                                              |
-| Database | PostgreSQL (self-hosted)                                         |
-| ORM      | Prisma 6                                                          |
-| Auth     | Auth.js (GitHub OAuth for dev, Microsoft Entra ID for production) |
-| Email    | Resend                                                            |
+| Database  | PostgreSQL (self-hosted) with pg_trgm full-text search indexes   |
+| ORM       | Prisma 6                                                          |
+| Cache     | Redis 7 (session cache, auth membership, project summary, task detail, kanban, dashboard, rate limiter) |
+| Auth      | Auth.js (GitHub OAuth for dev, Microsoft Entra ID for production) |
+| Email     | Resend                                                            |
 
 ---
 
@@ -33,7 +34,10 @@ Built as an internship project for Van Lang University.
 - **Weekly statistics** - Chart.js donut chart showing tasks created vs completed in the last 7 days
 - **Tags and deadlines** - tag projects and tasks with color-coded labels, set deadlines with color-coded due date display
 - **Super Admin panel** - system-wide project and user management with pagination, search, and deactivation controls
-- **Pagination throughout** - all list endpoints support paginated responses with meta
+- **Redis caching** - session cache, auth membership checks, project summary, task detail, kanban board (combined page 1 + per-column lazy pages), and dashboard page 1 are cached in Redis with TTL-based expiry and explicit invalidation on mutations; read-through `cached<T>()` helper with graceful fallback if Redis is unavailable
+- **Redis rate limiter** - fixed-window (100 req / 60s per IP+UA) enforced via `INCR` + `EXPIRE`, shared across all workers; falls back to in-memory if Redis is down
+- **Database optimization** - composite B-tree indexes on common query patterns (`projectId + status + createdAt`, `assigneeId + status + projectId`, `projectId + dueDate + status`); trigram GIN indexes for fast `ILIKE` text search on task titles and user names; deterministic pagination with `id` tiebreaker on all list endpoints
+- **Pagination throughout** - all list endpoints support paginated responses with meta; deterministic ordering prevents duplicates across page boundaries
 - **Microsoft SSO ready** - swap provider via environment variables, zero code changes required
 
 ---
@@ -148,7 +152,7 @@ EMAIL_FROM_ADDRESS=noreply@yourdomain.com
 docker compose up -d
 ```
 
-This starts PostgreSQL and the app (port 3000). Add `--profile tools` for pgAdmin (port 8080). All config comes from your `.env` file or environment defaults.
+This starts PostgreSQL, PgBouncer (connection pool), Redis (cache + rate limiter), and the app (port 3000). Add `--profile tools` for pgAdmin (port 8080). The app connects to Postgres through PgBouncer for efficient connection pooling under load. All config comes from your `.env` file or environment defaults.
 
 ---
 

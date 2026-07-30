@@ -16,6 +16,29 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/projectmanager
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 200
+      DEFAULT_POOL_SIZE: 25
+    depends_on:
+      db:
+        condition: service_healthy
+
   app:
     build:
       context: .
@@ -25,11 +48,14 @@ services:
     env_file: .env
     environment:
       # Docker-specific overrides (different hostnames from .env)
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/projectmanager
+      DATABASE_URL: postgresql://postgres:postgres@pgbouncer:5432/projectmanager?pgbouncer=true
       DIRECT_URL: postgresql://postgres:postgres@db:5432/projectmanager
+      REDIS_URL: redis://redis:6379
       ORIGIN: http://localhost:3000
     depends_on:
-      db:
+      pgbouncer:
+        condition: service_started
+      redis:
         condition: service_healthy
 
   pgadmin:

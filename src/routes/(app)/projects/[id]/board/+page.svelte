@@ -156,6 +156,7 @@
 	}
 
 	let searchTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+	let observers: IntersectionObserver[] = [];
 
 	function onSearchInput(status: ColumnKey) {
 		if (searchTimers[status]) clearTimeout(searchTimers[status]);
@@ -163,7 +164,9 @@
 	}
 
 	onMount(() => {
-		const observers: IntersectionObserver[] = [];
+		for (const status of ['TODO', 'DOING', 'DONE'] as const) {
+			loadPage(status as ColumnKey);
+		}
 
 		for (const status of ['TODO', 'DOING', 'DONE'] as const) {
 			const sentinel = sentinelEls[status];

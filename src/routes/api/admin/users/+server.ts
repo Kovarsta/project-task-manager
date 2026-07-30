@@ -16,10 +16,10 @@ export async function GET(event: RequestEvent) {
 	const skip = (page - 1) * limit;
 
 	const ALLOWED_SORTS: Record<string, any> = {
-		name: { name: order },
-		role: { isSuperAdmin: order === 'asc' ? 'desc' : 'asc' },
-		status: { deactivatedAt: order === 'desc' ? 'asc' : 'desc' },
-		created: { createdAt: order }
+		name: [{ name: order }, { id: 'asc' }],
+		role: [{ isSuperAdmin: order === 'asc' ? 'desc' : 'asc' }, { id: 'asc' }],
+		status: [{ deactivatedAt: order === 'desc' ? 'asc' : 'desc' }, { id: 'asc' }],
+		created: [{ createdAt: order }, { id: 'asc' }]
 	};
 
 	const orderBy = ALLOWED_SORTS[sortBy] ?? ALLOWED_SORTS.name;
