@@ -3,6 +3,8 @@ import GitHub from '@auth/sveltekit/providers/github';
 import MicrosoftEntraID from '@auth/sveltekit/providers/microsoft-entra-id';
 import { prisma } from '$lib/prisma';
 import { env } from '$env/dynamic/private';
+import { getRedis } from '$lib/server/redis';
+import { cached } from '$lib/server/cache';
 
 const providers = [];
 if (env.USE_MOCK_SSO) {
@@ -22,33 +24,10 @@ if (env.USE_MOCK_SSO) {
 	);
 }
 
-// --- In-memory session cache (avoids DB hit on every request) ---
-type CachedUser = { id: number; isSuperAdmin: boolean; deactivatedAt: Date | null } | null;
-const sessionCache = new Map<string, { data: CachedUser; expiry: number }>();
-const SESSION_TTL = 30_000;
-
-function getSessionCached(email: string): CachedUser | undefined {
-	const entry = sessionCache.get(email);
-	if (!entry) return undefined;
-	if (Date.now() > entry.expiry) {
-		sessionCache.delete(email);
-		return undefined;
-	}
-	return entry.data;
-}
-
-function setSessionCached(email: string, data: CachedUser): void {
-	if (sessionCache.size > 2000) {
-		const now = Date.now();
-		for (const [k, v] of sessionCache) {
-			if (now > v.expiry) sessionCache.delete(k);
-		}
-	}
-	sessionCache.set(email, { data, expiry: Date.now() + SESSION_TTL });
-}
-
-export function invalidateSessionCache(email: string): void {
-	sessionCache.delete(email);
+export async function invalidateSessionCache(email: string): Promise<void> {
+	const redis = await getRedis();
+	if (!redis) return;
+	await redis.del(`auth:session:${email}`);
 }
 
 export const { handle, signIn, signOut } = SvelteKitAuth({
@@ -59,14 +38,12 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
 		async session({ session }) {
 			if (!session.user.email) return session;
 
-			let dbUser = getSessionCached(session.user.email);
-			if (dbUser === undefined) {
-				dbUser = await prisma.user.findUnique({
+			const dbUser = await cached(`auth:session:${session.user.email}`, 30, async () => {
+				return prisma.user.findUnique({
 					where: { email: session.user.email },
 					select: { id: true, isSuperAdmin: true, deactivatedAt: true }
 				});
-				setSessionCached(session.user.email, dbUser);
-			}
+			});
 
 			if (dbUser) {
 				if (dbUser.deactivatedAt) return session;

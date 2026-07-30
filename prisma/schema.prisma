@@ -147,7 +147,10 @@ model Task {
   @@index([dueDate])
   @@index([createdById])
   @@index([projectId, status])
+  @@index([projectId, status, createdAt])
   @@index([projectId, assigneeId, status])
+  @@index([projectId, dueDate, status])
+  @@index([assigneeId, status, projectId])
   @@index([projectId, completedAt])
   @@index([completedAt])
 }

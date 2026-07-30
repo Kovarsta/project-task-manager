@@ -6,6 +6,8 @@ import { sanitizeHtml } from '$lib/sanitize';
 import { projectSearchFilter } from '$lib/server/project-search';
 import type { Prisma } from '@prisma/client';
 import type { RequestEvent } from '@sveltejs/kit';
+import { cached } from '$lib/server/cache';
+import { getRedis } from '$lib/server/redis';
 
 // GET: View all projects
 export async function GET(event: RequestEvent) {
@@ -15,6 +17,9 @@ export async function GET(event: RequestEvent) {
 	const limit = Math.min(50, Math.max(1, Number(event.url.searchParams.get('limit') ?? 20)));
 	const skip = (page - 1) * limit;
 	const q = event.url.searchParams.get('q') ?? '';
+
+	const shouldCache = page === 1 && !q;
+	const key = `dashboard:${user.id}:page:${page}:limit:${limit}`;
 
 	function searchFilter(input: Prisma.ProjectWhereInput) {
 		if (!q) return input;
@@ -32,39 +37,45 @@ export async function GET(event: RequestEvent) {
 		deactivatedAt: null
 	});
 
-	const [myProjects, myTotal, sharedProjects, sharedTotal] = await Promise.all([
-		prisma.project.findMany({
-			where: myWhere,
-			include: { _count: { select: { tasks: { where: { status: { not: 'DONE' } } } } } },
-			orderBy: { createdAt: 'desc' },
-			skip,
-			take: limit
-		}),
-		prisma.project.count({ where: myWhere }),
-		prisma.project.findMany({
-			where: sharedWhere,
-			include: { _count: { select: { tasks: { where: { status: { not: 'DONE' } } } } } },
-			orderBy: { createdAt: 'desc' },
-			skip,
-			take: limit
-		}),
-		prisma.project.count({ where: sharedWhere })
-	]);
+	const fetchProjects = () =>
+		Promise.all([
+			prisma.project.findMany({
+				where: myWhere,
+				include: { _count: { select: { tasks: { where: { status: { not: 'DONE' } } } } } },
+				orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+				skip,
+				take: limit
+			}),
+			prisma.project.count({ where: myWhere }),
+			prisma.project.findMany({
+				where: sharedWhere,
+				include: { _count: { select: { tasks: { where: { status: { not: 'DONE' } } } } } },
+				orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+				skip,
+				take: limit
+			}),
+			prisma.project.count({ where: sharedWhere })
+		]);
+
+	const [myProjects, myTotal, sharedProjects, sharedTotal] = shouldCache
+		? await cached(key, 60, fetchProjects)
+		: await fetchProjects();
 
 	// Aggregate attention data: count of assigned tasks + earliest due per project
 	const allProjectIds = [...myProjects, ...sharedProjects].map((p) => p.id);
-	const attentionAgg = allProjectIds.length > 0
-		? await prisma.task.groupBy({
-			by: ['projectId'],
-			where: {
-				projectId: { in: allProjectIds },
-				assigneeId: user.id,
-				status: { not: 'DONE' }
-			},
-			_count: { projectId: true },
-			_min: { dueDate: true }
-		})
-		: [];
+	const attentionAgg =
+		allProjectIds.length > 0
+			? await prisma.task.groupBy({
+					by: ['projectId'],
+					where: {
+						projectId: { in: allProjectIds },
+						assigneeId: user.id,
+						status: { not: 'DONE' }
+					},
+					_count: { projectId: true },
+					_min: { dueDate: true }
+				})
+			: [];
 
 	// Build lookup: projectId -> { count, earliestDue }
 	const attentionMap = new Map<number, { count: number; earliestDue: string | null }>();
@@ -146,6 +157,9 @@ export async function POST(event: RequestEvent) {
 		entityId: project.id,
 		metadata: { name }
 	});
+
+	const redis = await getRedis();
+	if (redis) await redis.del(`dashboard:${user.id}:page:1:limit:20`);
 
 	return json(project, { status: 201 });
 }

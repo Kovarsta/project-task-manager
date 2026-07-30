@@ -16,7 +16,7 @@ export async function GET(event: RequestEvent) {
 		prisma.activityLog.findMany({
 			where: { projectId },
 			include: { user: { select: { id: true, name: true } } },
-			orderBy: { createdAt: 'desc' },
+			orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
 			skip: (page - 1) * limit,
 			take: limit
 		}),

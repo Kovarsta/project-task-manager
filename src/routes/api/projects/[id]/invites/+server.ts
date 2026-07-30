@@ -21,7 +21,7 @@ export async function GET(event: RequestEvent) {
 			include: {
 				invitedBy: { select: { id: true, name: true, email: true } }
 			},
-			orderBy: { createdAt: 'desc' },
+			orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
 			skip,
 			take: limit
 		}),

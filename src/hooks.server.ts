@@ -4,6 +4,8 @@ import type { Handle } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
 import { gzip, brotliCompress } from 'node:zlib';
 import { promisify } from 'node:util';
+import { createHash } from 'node:crypto';
+import { getRedis } from '$lib/server/redis';
 
 const gzipAsync = promisify(gzip);
 const brotliAsync = promisify(brotliCompress);
@@ -35,12 +37,13 @@ export function handleError({
 	return { message: 'Internal server error' };
 }
 
-// --- Rate limiter (in-memory sliding window) ---
-type RateLimitEntry = { count: number; resetAt: number };
-const rateLimitMap = new Map<string, RateLimitEntry>();
-const WINDOW_MS = 60_000;
+// --- Rate limiter (Redis, falls back to in-memory) ---
+const WINDOW_SECONDS = 60;
 const MAX_REQUESTS = 100;
-let cleanupCounter = 0;
+
+function hashKey(key: string): string {
+	return createHash('sha256').update(key).digest('hex').slice(0, 16);
+}
 
 function buildRateLimitKey(event: import('@sveltejs/kit').RequestEvent): string {
 	const forwarded = event.request.headers.get('x-forwarded-for');
@@ -49,30 +52,37 @@ function buildRateLimitKey(event: import('@sveltejs/kit').RequestEvent): string 
 	return `${ip}|${ua.slice(0, 64)}`;
 }
 
+type RateLimitEntry = { count: number; resetAt: number };
+const fallbackMap = new Map<string, RateLimitEntry>();
+let cleanupCounter = 0;
+
 function cleanupExpiredEntries(): void {
 	const now = Date.now();
-	for (const [key, entry] of rateLimitMap) {
-		if (now > entry.resetAt) rateLimitMap.delete(key);
+	for (const [key, entry] of fallbackMap) {
+		if (now > entry.resetAt) fallbackMap.delete(key);
 	}
 }
 
 const rateLimiter: Handle = async ({ event, resolve }) => {
-	const key = buildRateLimitKey(event);
-	const now = Date.now();
-	const entry = rateLimitMap.get(key);
+	const key = hashKey(buildRateLimitKey(event));
+	const redis = await getRedis();
 
-	if (!entry || now > entry.resetAt) {
-		rateLimitMap.set(key, { count: 1, resetAt: now + WINDOW_MS });
-
-		cleanupCounter++;
-		if (cleanupCounter % 50 === 0) cleanupExpiredEntries();
-
-		return resolve(event);
-	}
-
-	entry.count++;
-	if (entry.count > MAX_REQUESTS) {
-		throw error(429, 'Too many requests — slow down');
+	if (redis) {
+		const redisKey = `ratelimit:${key}`;
+		const count = await redis.incr(redisKey);
+		if (count === 1) await redis.expire(redisKey, WINDOW_SECONDS);
+		if (count > MAX_REQUESTS) throw error(429, 'Too many requests — slow down');
+	} else {
+		const now = Date.now();
+		const entry = fallbackMap.get(key);
+		if (!entry || now > entry.resetAt) {
+			fallbackMap.set(key, { count: 1, resetAt: now + WINDOW_SECONDS * 1000 });
+			cleanupCounter++;
+			if (cleanupCounter % 50 === 0) cleanupExpiredEntries();
+			return resolve(event);
+		}
+		entry.count++;
+		if (entry.count > MAX_REQUESTS) throw error(429, 'Too many requests — slow down');
 	}
 
 	return resolve(event);

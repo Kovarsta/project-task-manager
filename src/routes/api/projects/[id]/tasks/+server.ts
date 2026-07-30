@@ -7,6 +7,8 @@ import type { RequestEvent } from '@sveltejs/kit';
 import { TaskStatus, TaskPriority } from '@prisma/client';
 import { parseIdParam } from '$lib/server/helpers';
 import { taskSearchFilter } from '$lib/server/task-search';
+import { cached } from '$lib/server/cache';
+import { getRedis } from '$lib/server/redis';
 
 // GET: View all task
 export async function GET(event: RequestEvent) {
@@ -44,19 +46,25 @@ export async function GET(event: RequestEvent) {
 		...(q && taskSearchFilter(q))
 	};
 
-	const [tasks, total] = await Promise.all([
-		prisma.task.findMany({
-			where,
-			include: {
-				assignee: { select: { id: true, name: true, email: true } },
-				createdBy: { select: { id: true, name: true } }
-			},
-			orderBy: { [sort]: order },
-			skip,
-			take: limit
-		}),
-		prisma.task.count({ where })
-	]);
+	const shouldCache = page === 1 && !q && !status && !priority && !assignee && !tag;
+	const key = `tasks:${projectId}:page:${page}:limit:${limit}`;
+
+	const fetchTasks = () =>
+		Promise.all([
+			prisma.task.findMany({
+				where,
+				include: {
+					assignee: { select: { id: true, name: true, email: true } },
+					createdBy: { select: { id: true, name: true } }
+				},
+				orderBy: [{ [sort]: order }, { id: 'asc' }],
+				skip,
+				take: limit
+			}),
+			prisma.task.count({ where })
+		]);
+
+	const [tasks, total] = shouldCache ? await cached(key, 15, fetchTasks) : await fetchTasks();
 
 	return json({
 		tasks,
@@ -133,6 +141,15 @@ export async function POST(event: RequestEvent) {
 		entityId: task.id,
 		metadata: { title, status: task.status, assigneeId: task.assigneeId }
 	});
+
+	const redis = await getRedis();
+	if (redis) {
+		await redis.del(`tasks:${projectId}:page:1:limit:20`);
+		await redis.del(`kanban:${projectId}:all:page:1`);
+		for (const s of ['TODO', 'DOING', 'DONE']) {
+			await redis.del(`kanban:${projectId}:status:${s}:page:1`);
+		}
+	}
 
 	return json(task, { status: 201 });
 }

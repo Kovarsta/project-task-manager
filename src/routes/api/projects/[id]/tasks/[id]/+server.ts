@@ -6,6 +6,8 @@ import { sanitizeHtml } from '$lib/sanitize';
 import type { RequestEvent } from '@sveltejs/kit';
 import { parseIdParam } from '$lib/server/helpers';
 import { TaskStatus, TaskPriority } from '@prisma/client';
+import { cached } from '$lib/server/cache';
+import { getRedis } from '$lib/server/redis';
 
 const taskInclude = {
 	assignee: { select: { id: true, name: true, email: true } as const },
@@ -21,7 +23,7 @@ async function getTask(id: number) {
 // GET: View specific task
 export async function GET(event: RequestEvent) {
 	const taskId = parseIdParam(event.params.id, 'taskId');
-	const task = await getTask(taskId);
+	const task = await cached(`task:${taskId}`, 30, () => getTask(taskId));
 	await requireProjectMember(event, task.projectId);
 	return json(task);
 }
@@ -30,6 +32,7 @@ export async function GET(event: RequestEvent) {
 export async function PATCH(event: RequestEvent) {
 	const taskId = parseIdParam(event.params.id, 'taskId');
 	const task = await getTask(taskId);
+
 	const { user, member } = await requireProjectMember(event, task.projectId);
 	const body = await event.request.json();
 	const isAdmin = member.role === 'ADMIN';
@@ -149,6 +152,15 @@ export async function PATCH(event: RequestEvent) {
 		}
 	});
 
+	const redis = await getRedis();
+	if (redis) {
+		await redis.del(`task:${taskId}`);
+		await redis.del(`kanban:${task.projectId}:all:page:1`);
+		for (const s of ['TODO', 'DOING', 'DONE']) {
+			await redis.del(`kanban:${task.projectId}:status:${s}:page:1`);
+		}
+	}
+
 	return json(updatedTask);
 }
 
@@ -158,8 +170,6 @@ export async function DELETE(event: RequestEvent) {
 	const task = await getTask(taskId);
 	const user = await requireProjectAdmin(event, task.projectId);
 
-	await prisma.task.delete({ where: { id: taskId } });
-
 	await logActivity({
 		projectId: task.projectId,
 		userId: user.id,
@@ -168,6 +178,16 @@ export async function DELETE(event: RequestEvent) {
 		entityId: taskId,
 		metadata: { title: task.title }
 	});
+
+	await prisma.task.delete({ where: { id: taskId } });
+	const redis = await getRedis();
+	if (redis) {
+		await redis.del(`task:${taskId}`);
+		await redis.del(`kanban:${task.projectId}:all:page:1`);
+		for (const s of ['TODO', 'DOING', 'DONE']) {
+			await redis.del(`kanban:${task.projectId}:status:${s}:page:1`);
+		}
+	}
 
 	return json({ success: true });
 }
