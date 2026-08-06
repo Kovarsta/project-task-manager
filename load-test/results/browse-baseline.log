@@ -1,0 +1,41 @@
+
+
+  Γûê TOTAL RESULTS 
+
+    checks_total.......: 156597 744.58188/s
+    checks_succeeded...: 17.57% 27522 out of 156597
+    checks_failed......: 82.42% 129075 out of 156597
+
+    Γ£ù home 200
+      Γå│  0% ΓÇö Γ£ô 129 / Γ£ù 22242
+    Γ£ù projects 200
+      Γå│  25% ΓÇö Γ£ô 5612 / Γ£ù 16759
+    Γ£ù page 200
+      Γå│  0% ΓÇö Γ£ô 79 / Γ£ù 22292
+    Γ£ù summary 200
+      Γå│  24% ΓÇö Γ£ô 5419 / Γ£ù 16952
+    Γ£ù tasks p1 200
+      Γå│  24% ΓÇö Γ£ô 5421 / Γ£ù 16950
+    Γ£ù tasks p50 200
+      Γå│  24% ΓÇö Γ£ô 5429 / Γ£ù 16942
+    Γ£ù kanban 200
+      Γå│  24% ΓÇö Γ£ô 5433 / Γ£ù 16938
+
+    HTTP
+    http_req_duration..............: avg=94.86ms  min=0s       med=4.6ms    max=3.37s  p(90)=281.68ms p(95)=763.05ms
+      { expected_response:true }...: avg=347.21ms min=7.01ms   med=116.59ms max=3.37s  p(90)=919.57ms p(95)=1.06s   
+    http_req_failed................: 82.42% 129075 out of 156597
+    http_reqs......................: 156597 744.58188/s
+
+    EXECUTION
+    iteration_duration.............: avg=1.16s    min=501.51ms med=532.24ms max=10.11s p(90)=2.57s    p(95)=6.14s   
+    iterations.....................: 22371  106.36884/s
+    vus............................: 3      min=2                max=250
+    vus_max........................: 250    min=250              max=250
+
+    NETWORK
+    data_received..................: 480 MB 2.3 MB/s
+    data_sent......................: 121 MB 574 kB/s
+
+
+

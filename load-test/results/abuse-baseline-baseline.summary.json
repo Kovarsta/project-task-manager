@@ -1,0 +1,30 @@
+{
+  "scenario": "abuse-baseline",
+  "runId": "baseline",
+  "durationMs": 209950,
+  "requests": 812400,
+  "rps": 3869.5,
+  "errorRate": 99.03,
+  "httpReqDuration": {
+    "count": 812400,
+    "avgMs": 31.4,
+    "medMs": 16.6,
+    "p90Ms": 43.7,
+    "p95Ms": 50.3,
+    "p99Ms": 142.3
+  },
+  "endpoints": {
+    "GET /api/projects": {
+      "count": 812400,
+      "avgMs": 31.4,
+      "medMs": 16.6,
+      "p90Ms": 43.7,
+      "p95Ms": 50.3,
+      "p99Ms": 142.3,
+      "statuses": {
+        "200": 7854,
+        "429": 804546
+      }
+    }
+  }
+}

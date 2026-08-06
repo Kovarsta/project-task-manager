@@ -1,0 +1,28 @@
+
+
+  Γûê TOTAL RESULTS 
+
+    checks_total.......: 48972   232.843721/s
+    checks_succeeded...: 100.00% 48972 out of 48972
+    checks_failed......: 0.00%   0 out of 48972
+
+    Γ£ô search 200
+
+    HTTP
+    http_req_duration..............: avg=21.6ms min=3.02ms   med=10.72ms max=597.22ms p(90)=45.71ms  p(95)=71.47ms 
+      { expected_response:true }...: avg=21.6ms min=3.02ms   med=10.72ms max=597.22ms p(90)=45.71ms  p(95)=71.47ms 
+    http_req_failed................: 0.00% 0 out of 48972
+    http_reqs......................: 48972 232.843721/s
+
+    EXECUTION
+    iteration_duration.............: avg=522ms  min=503.14ms med=511.1ms max=1.09s    p(90)=546.11ms p(95)=571.98ms
+    iterations.....................: 48972 232.843721/s
+    vus............................: 3     min=2          max=250
+    vus_max........................: 250   min=250        max=250
+
+    NETWORK
+    data_received..................: 53 MB 251 kB/s
+    data_sent......................: 32 MB 152 kB/s
+
+
+

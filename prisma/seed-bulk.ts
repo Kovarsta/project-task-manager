@@ -156,7 +156,6 @@ function buildTaskData(projectId: number, i: number, memberPool: number[], owner
 
 async function createUsers() {
 	console.log(`Creating ${USER_COUNT} users...`);
-	const ids: number[] = [];
 	for (let i = 0; i < USER_COUNT; i += USER_BATCH) {
 		const batch = Array.from({ length: Math.min(USER_BATCH, USER_COUNT - i) }, (_, j) => buildUserData(i + j));
 		await prisma.user.createMany({ data: batch, skipDuplicates: true });
@@ -164,10 +163,15 @@ async function createUsers() {
 			console.log(`  ... ${Math.min(i + USER_BATCH, USER_COUNT)} / ${USER_COUNT} users`);
 		}
 	}
-	const rows = await prisma.user.findMany({ where: { microsoftId: { startsWith: 'seed-bulk-' } }, select: { id: true }, orderBy: { id: 'asc' } });
-	ids.push(...rows.map((u) => u.id));
-	console.log(`Created ${ids.length} users (ids ${ids[0]}..${ids[ids.length - 1]}).`);
-	return ids;
+	const rows = await prisma.user.findMany({
+		where: { microsoftId: { startsWith: 'seed-bulk-' } },
+		select: { id: true, microsoftId: true }
+	});
+	const bySeedIdx = new Map(rows.map((u) => [Number(u.microsoftId.slice('seed-bulk-'.length)), u.id]));
+	const existingIds = rows.map((u) => u.id);
+	const users = Array.from({ length: USER_COUNT }, (_, i) => bySeedIdx.get(i) ?? existingIds[i % existingIds.length] ?? 0);
+	console.log(`Created ${rows.length} users (ids ${existingIds[0]}..${existingIds[existingIds.length - 1]}).`);
+	return users;
 }
 
 async function createProject(name: string, ownerId: number, memberIds: number[], description: string) {

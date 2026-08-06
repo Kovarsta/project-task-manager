@@ -1,0 +1,104 @@
+{
+  "scenario": "browse-baseline",
+  "runId": "baseline",
+  "durationMs": 209335,
+  "requests": 156597,
+  "rps": 748.1,
+  "errorRate": 82.42,
+  "httpReqDuration": {
+    "count": 156597,
+    "avgMs": 94.9,
+    "medMs": 4.6,
+    "p90Ms": 281.7,
+    "p95Ms": 763.1,
+    "p99Ms": 1195.2
+  },
+  "endpoints": {
+    "GET /": {
+      "count": 22371,
+      "avgMs": 108.2,
+      "medMs": 4.7,
+      "p90Ms": 366.4,
+      "p95Ms": 844.2,
+      "p99Ms": 1376.7,
+      "statuses": {
+        "200": 129,
+        "429": 16764,
+        "500": 5478
+      }
+    },
+    "GET /api/projects": {
+      "count": 22371,
+      "avgMs": 106,
+      "medMs": 4.7,
+      "p90Ms": 310.7,
+      "p95Ms": 891.4,
+      "p99Ms": 1264.5,
+      "statuses": {
+        "200": 5612,
+        "429": 16759
+      }
+    },
+    "GET /projects/[id]": {
+      "count": 22371,
+      "avgMs": 110.6,
+      "medMs": 4.6,
+      "p90Ms": 354.7,
+      "p95Ms": 936.6,
+      "p99Ms": 1372.8,
+      "statuses": {
+        "200": 79,
+        "429": 16957,
+        "500": 5335
+      }
+    },
+    "GET /api/projects/[id]/summary": {
+      "count": 22371,
+      "avgMs": 93,
+      "medMs": 4.6,
+      "p90Ms": 258.4,
+      "p95Ms": 823.3,
+      "p99Ms": 1170.1,
+      "statuses": {
+        "200": 5419,
+        "429": 16952
+      }
+    },
+    "GET /api/projects/[id]/tasks?page=1": {
+      "count": 22371,
+      "avgMs": 81.8,
+      "medMs": 4.6,
+      "p90Ms": 255,
+      "p95Ms": 668.2,
+      "p99Ms": 1004.4,
+      "statuses": {
+        "200": 5421,
+        "429": 16950
+      }
+    },
+    "GET /api/projects/[id]/tasks?page=50": {
+      "count": 22371,
+      "avgMs": 83.7,
+      "medMs": 4.5,
+      "p90Ms": 248.9,
+      "p95Ms": 706.6,
+      "p99Ms": 1003.7,
+      "statuses": {
+        "200": 5429,
+        "429": 16942
+      }
+    },
+    "GET /api/projects/[id]/kanban": {
+      "count": 22371,
+      "avgMs": 80.8,
+      "medMs": 4.5,
+      "p90Ms": 256.2,
+      "p95Ms": 654.1,
+      "p99Ms": 996.1,
+      "statuses": {
+        "200": 5433,
+        "429": 16938
+      }
+    }
+  }
+}
