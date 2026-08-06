@@ -1,0 +1,29 @@
+{
+  "scenario": "search-head-full",
+  "runId": "head-full",
+  "durationMs": 210294,
+  "requests": 48972,
+  "rps": 232.9,
+  "errorRate": 0,
+  "httpReqDuration": {
+    "count": 48972,
+    "avgMs": 21.6,
+    "medMs": 10.7,
+    "p90Ms": 45.7,
+    "p95Ms": 71.5,
+    "p99Ms": 176.2
+  },
+  "endpoints": {
+    "GET /api/users/search": {
+      "count": 48972,
+      "avgMs": 21.6,
+      "medMs": 10.7,
+      "p90Ms": 45.7,
+      "p95Ms": 71.5,
+      "p99Ms": 176.2,
+      "statuses": {
+        "200": 48972
+      }
+    }
+  }
+}

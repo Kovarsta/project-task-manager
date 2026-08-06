@@ -1,0 +1,95 @@
+{
+  "scenario": "browse-head-full",
+  "runId": "head-full",
+  "durationMs": 209482,
+  "requests": 56280,
+  "rps": 268.7,
+  "errorRate": 0,
+  "httpReqDuration": {
+    "count": 56280,
+    "avgMs": 389.1,
+    "medMs": 271,
+    "p90Ms": 793.4,
+    "p95Ms": 1228.5,
+    "p99Ms": 1734.2
+  },
+  "endpoints": {
+    "GET /": {
+      "count": 8040,
+      "avgMs": 623.9,
+      "medMs": 466.9,
+      "p90Ms": 1254.5,
+      "p95Ms": 1351,
+      "p99Ms": 1492,
+      "statuses": {
+        "200": 8040
+      }
+    },
+    "GET /api/projects": {
+      "count": 8040,
+      "avgMs": 269.4,
+      "medMs": 208,
+      "p90Ms": 535.6,
+      "p95Ms": 593.5,
+      "p99Ms": 667.6,
+      "statuses": {
+        "200": 8040
+      }
+    },
+    "GET /projects/[id]": {
+      "count": 8040,
+      "avgMs": 806.6,
+      "medMs": 646,
+      "p90Ms": 1668.1,
+      "p95Ms": 1800.4,
+      "p99Ms": 1994,
+      "statuses": {
+        "200": 8040
+      }
+    },
+    "GET /api/projects/[id]/summary": {
+      "count": 8040,
+      "avgMs": 252.3,
+      "medMs": 190.6,
+      "p90Ms": 509.4,
+      "p95Ms": 566.4,
+      "p99Ms": 635.4,
+      "statuses": {
+        "200": 8040
+      }
+    },
+    "GET /api/projects/[id]/tasks?page=1": {
+      "count": 8040,
+      "avgMs": 249.7,
+      "medMs": 183.1,
+      "p90Ms": 499.4,
+      "p95Ms": 565,
+      "p99Ms": 639.9,
+      "statuses": {
+        "200": 8040
+      }
+    },
+    "GET /api/projects/[id]/tasks?page=50": {
+      "count": 8040,
+      "avgMs": 270.6,
+      "medMs": 211.6,
+      "p90Ms": 524.9,
+      "p95Ms": 583.7,
+      "p99Ms": 670.8,
+      "statuses": {
+        "200": 8040
+      }
+    },
+    "GET /api/projects/[id]/kanban": {
+      "count": 8040,
+      "avgMs": 251.3,
+      "medMs": 192.4,
+      "p90Ms": 501.9,
+      "p95Ms": 560.2,
+      "p99Ms": 643.2,
+      "statuses": {
+        "200": 8040
+      }
+    }
+  }
+}

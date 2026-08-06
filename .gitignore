@@ -32,4 +32,9 @@ vite.config.ts.timestamp-*
 cookies.txt
 /temp
 
+# Load test run artifacts (generated, regenerable)
+/load-test/tokens.js
+/load-test/results/app-*.log
+/load-test/results/*.raw.json
+
 /prisma/src/generated/prisma

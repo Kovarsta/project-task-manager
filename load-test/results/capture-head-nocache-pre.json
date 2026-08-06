@@ -1,0 +1,63 @@
+{
+  "tag": "head-nocache-pre",
+  "capturedAt": "2026-08-06T13:54:31.415Z",
+  "tables": [
+    {
+      "table": "ActivityLog",
+      "seq_scan": 1,
+      "idx_scan": 6002,
+      "seq_ratio": "0.00016658337497917708"
+    },
+    {
+      "table": "Project",
+      "seq_scan": 474824,
+      "idx_scan": 0,
+      "seq_ratio": "1"
+    },
+    {
+      "table": "ProjectMember",
+      "seq_scan": 29,
+      "idx_scan": 1347253,
+      "seq_ratio": "0.000021524818115286925825"
+    },
+    {
+      "table": "Task",
+      "seq_scan": 1,
+      "idx_scan": 704297,
+      "seq_ratio": "0.000001419853527910060798"
+    },
+    {
+      "table": "TaskStatusHistory",
+      "seq_scan": 0,
+      "idx_scan": 0,
+      "seq_ratio": "0"
+    },
+    {
+      "table": "User",
+      "seq_scan": 6658,
+      "idx_scan": 1819500,
+      "seq_ratio": "0.00364590577595147846"
+    }
+  ],
+  "totals": [
+    {
+      "seq": 481513,
+      "idx": 3877052
+    }
+  ],
+  "db": [
+    {
+      "numbackends": 1,
+      "xact_commit": 1014175,
+      "xact_rollback": 0,
+      "blks_read": 1017,
+      "blks_hit": 638885908,
+      "deadlocks": 0
+    }
+  ],
+  "redis": {
+    "keyspace_hits": "507505",
+    "keyspace_misses": "1501",
+    "connected_clients": null
+  }
+}

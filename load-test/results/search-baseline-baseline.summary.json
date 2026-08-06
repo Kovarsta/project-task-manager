@@ -1,0 +1,30 @@
+{
+  "scenario": "search-baseline",
+  "runId": "baseline",
+  "durationMs": 210195,
+  "requests": 49496,
+  "rps": 235.5,
+  "errorRate": 10.68,
+  "httpReqDuration": {
+    "count": 49496,
+    "avgMs": 16,
+    "medMs": 10.2,
+    "p90Ms": 35.2,
+    "p95Ms": 49.2,
+    "p99Ms": 89.1
+  },
+  "endpoints": {
+    "GET /api/users/search": {
+      "count": 49496,
+      "avgMs": 16,
+      "medMs": 10.2,
+      "p90Ms": 35.2,
+      "p95Ms": 49.2,
+      "p99Ms": 89.1,
+      "statuses": {
+        "200": 44212,
+        "429": 5284
+      }
+    }
+  }
+}
