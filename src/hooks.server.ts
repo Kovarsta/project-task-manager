@@ -38,8 +38,8 @@ export function handleError({
 }
 
 // --- Rate limiter (Redis, falls back to in-memory) ---
-const WINDOW_SECONDS = 60;
-const MAX_REQUESTS = 100;
+const WINDOW_SECONDS = Number(process.env.RATE_LIMIT_WINDOW ?? 60);
+const MAX_REQUESTS = Number(process.env.RATE_LIMIT_MAX ?? 100);
 
 function hashKey(key: string): string {
 	return createHash('sha256').update(key).digest('hex').slice(0, 16);
@@ -64,6 +64,8 @@ function cleanupExpiredEntries(): void {
 }
 
 const rateLimiter: Handle = async ({ event, resolve }) => {
+	if (MAX_REQUESTS <= 0) return resolve(event);
+
 	const key = hashKey(buildRateLimitKey(event));
 	const redis = await getRedis();
 
