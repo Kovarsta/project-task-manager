@@ -40,20 +40,21 @@ export function handleError({
 // --- Rate limiter (Redis, falls back to in-memory) ---
 const WINDOW_SECONDS = Number(process.env.RATE_LIMIT_WINDOW ?? 60);
 const MAX_REQUESTS = Number(process.env.RATE_LIMIT_MAX ?? 100);
+const PAGE_CACHE_TTL_SECONDS = 30;
 
 function hashKey(key: string): string {
 	return createHash('sha256').update(key).digest('hex').slice(0, 16);
 }
 
 function buildRateLimitKey(event: import('@sveltejs/kit').RequestEvent): string {
-	const forwarded = event.request.headers.get('x-forwarded-for');
-	const ip = forwarded?.split(',')[0]?.trim() ?? event.getClientAddress() ?? 'unknown';
+	const ip = event.getClientAddress() || 'unknown';
 	const ua = event.request.headers.get('user-agent') ?? '';
 	return `${ip}|${ua.slice(0, 64)}`;
 }
 
 type RateLimitEntry = { count: number; resetAt: number };
 const fallbackMap = new Map<string, RateLimitEntry>();
+const FALLBACK_MAX_ENTRIES = 50_000;
 let cleanupCounter = 0;
 
 function cleanupExpiredEntries(): void {
@@ -81,6 +82,10 @@ const rateLimiter: Handle = async ({ event, resolve }) => {
 			fallbackMap.set(key, { count: 1, resetAt: now + WINDOW_SECONDS * 1000 });
 			cleanupCounter++;
 			if (cleanupCounter % 50 === 0) cleanupExpiredEntries();
+			if (fallbackMap.size > FALLBACK_MAX_ENTRIES) {
+				cleanupExpiredEntries();
+				if (fallbackMap.size > FALLBACK_MAX_ENTRIES) fallbackMap.clear();
+			}
 			return resolve(event);
 		}
 		entry.count++;
@@ -120,7 +125,11 @@ const compressAndCache: Handle = async ({ event, resolve }) => {
 	if (event.url.pathname.startsWith('/_app/immutable/')) {
 		const headers = new Headers(response.headers);
 		headers.set('Cache-Control', 'public, max-age=31536000, immutable');
-		return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+		return new Response(response.body, {
+			status: response.status,
+			statusText: response.statusText,
+			headers
+		});
 	}
 
 	// --- Skip compression for non-compressible, small, or already-encoded ---
@@ -144,13 +153,60 @@ const compressAndCache: Handle = async ({ event, resolve }) => {
 		const compressed = await brotliAsync(body, { quality: 4 });
 		headers.set('Content-Encoding', 'br');
 		headers.set('Content-Length', String(compressed.length));
-		return new Response(compressed, { status: response.status, statusText: response.statusText, headers });
+		return new Response(compressed, {
+			status: response.status,
+			statusText: response.statusText,
+			headers
+		});
 	}
 
 	const compressed = await gzipAsync(body);
 	headers.set('Content-Encoding', 'gzip');
 	headers.set('Content-Length', String(compressed.length));
-	return new Response(compressed, { status: response.status, statusText: response.statusText, headers });
+	return new Response(compressed, {
+		status: response.status,
+		statusText: response.statusText,
+		headers
+	});
 };
 
-export const handle = sequence(rateLimiter, authHandle, authGuard, compressAndCache);
+// --- Page cache (whole SSR document, per-user) ---
+const pageCache: Handle = async ({ event, resolve }) => {
+	if (event.request.method !== 'GET') return resolve(event);
+	if (event.url.pathname.startsWith('/api')) return resolve(event);
+
+	const userId = event.locals.userId;
+	if (!userId) return resolve(event);
+
+	const redis = await getRedis();
+	if (!redis) return resolve(event);
+
+	const key = `page:${userId}:${event.url.pathname}${event.url.search}`;
+
+	try {
+		const hit = await redis.get(key);
+		if (hit) {
+			return new Response(hit, {
+				status: 200,
+				headers: { 'content-type': 'text/html; charset=utf-8' }
+			});
+		}
+	} catch {
+		// cache read failed — render fresh
+	}
+
+	const res = await resolve(event);
+	if (res.ok) {
+		const html = await res.text();
+		try {
+			await redis.setEx(key, PAGE_CACHE_TTL_SECONDS, html);
+		} catch {
+			// cache write failed — still serve the page
+		}
+		return new Response(html, res);
+	}
+
+	return res;
+};
+
+export const handle = sequence(rateLimiter, authHandle, authGuard, pageCache, compressAndCache);

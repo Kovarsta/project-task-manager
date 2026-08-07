@@ -1,0 +1,34 @@
+
+
+  Γûê TOTAL RESULTS 
+
+    checks_total.......: 122101  580.517259/s
+    checks_succeeded...: 100.00% 122101 out of 122101
+    checks_failed......: 0.00%   0 out of 122101
+
+    Γ£ô home 200
+    Γ£ô projects 200
+    Γ£ô page 200
+    Γ£ô summary 200
+    Γ£ô tasks p1 200
+    Γ£ô tasks p50 200
+    Γ£ô kanban 200
+
+    HTTP
+    http_req_duration..............: avg=139.01ms min=2.5ms    med=94.54ms max=2.05s p(90)=293.3ms p(95)=327.43ms
+      { expected_response:true }...: avg=139.01ms min=2.5ms    med=94.54ms max=2.05s p(90)=293.3ms p(95)=327.43ms
+    http_req_failed................: 0.00%  0 out of 122101
+    http_reqs......................: 122101 580.517259/s
+
+    EXECUTION
+    iteration_duration.............: avg=1.47s    min=531.14ms med=1.15s   max=4.97s p(90)=2.49s   p(95)=2.65s   
+    iterations.....................: 17443  82.931037/s
+    vus............................: 3      min=2           max=250
+    vus_max........................: 250    min=250         max=250
+
+    NETWORK
+    data_received..................: 2.2 GB 10 MB/s
+    data_sent......................: 129 MB 615 kB/s
+
+
+

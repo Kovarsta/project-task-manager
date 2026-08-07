@@ -1,0 +1,29 @@
+{
+  "scenario": "search-head-full-pagecache",
+  "runId": "head-full-pagecache",
+  "durationMs": 210361,
+  "requests": 49361,
+  "rps": 234.6,
+  "errorRate": 0,
+  "httpReqDuration": {
+    "count": 49361,
+    "avgMs": 17.5,
+    "medMs": 9.3,
+    "p90Ms": 32,
+    "p95Ms": 55.1,
+    "p99Ms": 158.5
+  },
+  "endpoints": {
+    "GET /api/users/search": {
+      "count": 49361,
+      "avgMs": 17.5,
+      "medMs": 9.3,
+      "p90Ms": 32,
+      "p95Ms": 55.1,
+      "p99Ms": 158.5,
+      "statuses": {
+        "200": 49361
+      }
+    }
+  }
+}
