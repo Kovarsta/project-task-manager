@@ -34,8 +34,8 @@ Built as an internship project for Van Lang University.
 - **Weekly statistics** - Chart.js donut chart showing tasks created vs completed in the last 7 days
 - **Tags and deadlines** - tag projects and tasks with color-coded labels, set deadlines with color-coded due date display
 - **Super Admin panel** - system-wide project and user management with pagination, search, and deactivation controls
-- **Redis caching** - session cache, auth membership checks, project summary, task detail, kanban board (combined page 1 + per-column lazy pages), and dashboard page 1 are cached in Redis with TTL-based expiry and explicit invalidation on mutations; read-through `cached<T>()` helper with graceful fallback if Redis is unavailable
-- **Redis rate limiter** - fixed-window (100 req / 60s per IP+UA) enforced via `INCR` + `EXPIRE`, shared across all workers; falls back to in-memory if Redis is down
+- **Redis caching** - session cache, auth membership checks, project summary, task detail, kanban board (combined page 1 + per-column lazy pages), dashboard page 1, and whole-page SSR rendering (per-user, 30s TTL) are cached in Redis with TTL-based expiry and explicit invalidation on mutations; read-through `cached<T>()` helper with graceful fallback if Redis is unavailable
+- **Redis rate limiter** - fixed-window (default 100 req / 60s per IP+UA) enforced via `INCR` + `EXPIRE`, shared across all workers; keys on the real TCP socket address (immune to spoofed `x-forwarded-for`), with optional `ADDRESS_HEADER`/`XFF_DEPTH` support for trusted reverse proxies; falls back to a size-capped in-memory map if Redis is down
 - **Database optimization** - composite B-tree indexes on common query patterns (`projectId + status + createdAt`, `assigneeId + status + projectId`, `projectId + dueDate + status`); trigram GIN indexes for fast `ILIKE` text search on task titles and user names; deterministic pagination with `id` tiebreaker on all list endpoints
 - **Pagination throughout** - all list endpoints support paginated responses with meta; deterministic ordering prevents duplicates across page boundaries
 - **Microsoft SSO ready** - swap provider via environment variables, zero code changes required
@@ -153,6 +153,12 @@ docker compose up -d
 ```
 
 This starts PostgreSQL, PgBouncer (connection pool), Redis (cache + rate limiter), and the app (port 3000). Add `--profile tools` for pgAdmin (port 8080). The app connects to Postgres through PgBouncer for efficient connection pooling under load. All config comes from your `.env` file or environment defaults.
+
+---
+
+## Load Testing
+
+The k6-based load-testing toolkit — scenarios, launcher scripts, token minting, and result capture/summarization — is documented in [`load-test/README.md`](load-test/README.md). The methodology, three-leg baseline-vs-optimized results, and reproduction steps are in [`LOAD-TEST-REPORT.md`](LOAD-TEST-REPORT.md).
 
 ---
 
