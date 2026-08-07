@@ -5,6 +5,7 @@ param(
 	[switch]$UseRedis,
 	[string]$RedisUrl = 'redis://localhost:6379',
 	[int]$RateLimitMax = -1,
+	[switch]$UseProxyHeader,
 	[string[]]$Scenarios = @('browse', 'search', 'abuse')
 )
 $ErrorActionPreference = 'Continue'
@@ -54,6 +55,13 @@ $env:AUTH_TRUST_HOST = 'true'
 $env:USE_MOCK_SSO = 'true'
 $env:HOST = '127.0.0.1'
 $env:RATE_LIMIT_MAX = "$RateLimitMax"
+if ($UseProxyHeader) {
+	$env:ADDRESS_HEADER = 'x-forwarded-for'
+	$env:XFF_DEPTH = '1'
+} else {
+	$env:ADDRESS_HEADER = ''
+	$env:XFF_DEPTH = '1'
+}
 if ($UseRedis) { $env:REDIS_URL = $RedisUrl; $env:REDIS_ENABLED = 'true' }
 else { $env:REDIS_URL = ''; $env:REDIS_ENABLED = 'false' }
 $env:DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/projectmanager'
