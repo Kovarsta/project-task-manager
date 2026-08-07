@@ -15,6 +15,9 @@ machine:
   the same 250-VU peak.
 - **Redis alone** is worth ~2x browse throughput, ~6x abuse throughput, and
   12.7x fewer full-table scans.
+- **SSR page caching** (added after the ladder) takes browse from p99 1,734ms →
+  425ms while serving **2.2x more requests** at 0% errors — see
+  [Comparison 3](#comparison-3--head-full--head-full--page-cache).
 
 ## Methodology
 
@@ -50,6 +53,9 @@ buckets distinct.
 | HEAD no-cache | browse | 28,259 | 135 | **0.00** | 635ms | 2,542ms | 3,548ms |
 | HEAD no-cache | search | 48,453 | 231 | **0.00** | 14.6ms | 95ms | 184ms |
 | HEAD no-cache | abuse | 18,022 | 86 | **0.00** | 1,113ms | 3,094ms | 3,308ms |
+| HEAD full + page cache | browse | 122,101 | 583 | **0.00** | 94.5ms | 327ms | 425ms |
+| HEAD full + page cache | search | 49,361 | 235 | **0.00** | 9.3ms | 55ms | 159ms |
+| HEAD full + page cache | abuse | 117,315 | 559 | **0.00** | 172ms | 429ms | 492ms |
 
 Baseline p50 latency is computed over its mostly-rejected traffic (see caveats);
 it is not comparable to HEAD's "every request actually served" latency.
@@ -114,6 +120,49 @@ rate limiter is disabled. This isolates what the Redis layer contributes:
   vs 11,612 (see telemetry). Redis turns repeated identical queries into memory
   hits instead of planner full scans.
 
+## Comparison 3 — HEAD full → HEAD full + page cache
+
+*Addendum (2026-08-07). Not part of the original 3-run ladder; same build and
+config as HEAD full, plus the `pageCache` hook.*
+
+The `pageCache` hook (`src/hooks.server.ts`) caches the **whole SSR document**
+per user + URL in Redis with a 30s TTL, slotted into the hooks sequence between
+`authGuard` and `compressAndCache`. On a hit the request never reaches
+`resolve()`; `/api` paths are skipped (they already have data-level caching).
+Only effective when Redis is on, so the no-cache leg is unaffected.
+
+### Browse
+
+| Metric | HEAD full | HEAD full + page cache | Change |
+|--------|----------:|-----------------------:|-------:|
+| Throughput | 269 rps | 583 rps | **2.2x** |
+| p50 | 271ms | 94.5ms | 2.9x faster |
+| p95 | 1,229ms | 327ms | 3.8x faster |
+| p99 | 1,734ms | 425ms | **4.1x faster** |
+| Requests served | 56,280 | 122,101 | 2.2x more |
+
+This is the strong version of the result: the run served **2.2x more requests
+in the same wall time** (faster iterations, not lighter load) at **4x lower
+p99**. The SSR pages — the tail story from Comparison 1 — collapsed:
+
+| Endpoint | p50 before → after | p95 before → after |
+|----------|--------------------:|-------------------:|
+| SSR: project page `/projects/[id]` | 646 → **82ms** | 1,800 → **298ms** |
+| SSR: home `/` | 467 → **86ms** | 1,351 → **305ms** |
+| API: summary | 191 → 88ms | 566 → 316ms |
+| API: tasks p1 | 183 → 89ms | 565 → 314ms |
+
+The APIs improved too even though `/api` is not page-cached: freeing the
+render CPU (and its event-loop queueing) sped up the API calls that share the
+process. The residual ~700ms p99 on the SSR pages is the periodic 30s TTL
+re-render miss + brotli compression still queueing under the 250-VU herd —
+the next knobs are a longer TTL and cheaper compression.
+
+### Search & abuse (regression check)
+
+search is API-only and unaffected: 233 → 235 rps, p99 176 → 159ms. abuse is
+API-only: 508 → 559 rps, 0% errors. No regression on the non-SSR paths.
+
 ## Telemetry
 
 | Metric | Baseline | HEAD full | HEAD no-cache |
@@ -156,6 +205,11 @@ shared buffers after warmup, so no run is disk-bound.
   `connectTimeout: 1000` + `reconnectStrategy: () => false`) and re-run. That
   fix is itself a production robustness win: a Redis outage no longer hangs
   requests.
+- **The page-cache run is an addendum, not a ladder leg.** It shares HEAD full's
+  config but adds the `pageCache` hook, so its numbers are not directly in the
+  Baseline→HEAD causal chain — treat them as "same workload, plus SSR page
+  caching." Its artifacts are saved under `head-full-pagecache` (no original
+  files were overwritten).
 
 ## Reproduce
 
@@ -164,6 +218,9 @@ shared buffers after warmup, so no run is disk-bound.
 & load-test\run-baseline.ps1     # port 3100
 & load-test\run-head-full.ps1    # port 3000 (Redis on, RATE_LIMIT_MAX=20000)
 & load-test\run-head-nocache.ps1 # port 3001 (Redis off, RATE_LIMIT_MAX=0)
+# addendum: SSR page-cache leg (run-loadtest.ps1 directly so artifacts get a
+# distinct runId instead of overwriting head-full)
+& load-test\run-loadtest.ps1 -RunId head-full-pagecache -Port 3000 -BuildDir <root> -UseRedis -RateLimitMax 20000 -UseProxyHeader
 ```
 
 Each launcher: stops the dockerized app, kills leftover app node processes,
@@ -182,3 +239,4 @@ deleted after summarizing (baseline raws were multi-GB).
 | Redis cache | Run 2 vs 3: 2.0x browse / 5.9x abuse throughput; 99.7% hit ratio; 12.7x fewer seq scans |
 | DB indexes / query fixes | No 500s under 250 VUs; zero deadlocks/rollbacks; working set stays in buffers |
 | Compression + session cache (perf #1) | Inside the Baseline→HEAD total; costs CPU locally but pays bandwidth on a real network |
+| SSR page cache (per-user HTML, 30s TTL) | Run 2 vs 4: 2.2x browse throughput; p99 1,734→425ms; SSR page p50s 646→82ms / 467→86ms |
