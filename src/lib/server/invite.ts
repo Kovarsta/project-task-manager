@@ -4,7 +4,7 @@ import { prisma } from '$lib/prisma';
 export async function getValidInvite(token: string) {
 	const invite = await prisma.projectInvite.findUnique({
 		where: { token },
-		include: { project: true }
+		include: { project: { select: { id: true, name: true, deactivatedAt: true } } }
 	});
 
 	if (!invite) throw error(404, 'Invalid invite link');

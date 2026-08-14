@@ -3,6 +3,7 @@ import { prisma } from '$lib/prisma';
 import { requireAuth } from '$lib/server/auth';
 import { logActivity } from '$lib/server/activity';
 import { getValidInvite } from '$lib/server/invite';
+import { invalidateMembershipCaches } from '$lib/server/invalidate';
 import type { RequestEvent } from '@sveltejs/kit';
 
 // POST: Accept an invitation code
@@ -67,6 +68,8 @@ export async function POST(event: RequestEvent) {
 			metadata: { name: user.name, email: user.email }
 		});
 	}
+
+	await invalidateMembershipCaches(invite.projectId, user.id);
 
 	return json(result);
 }

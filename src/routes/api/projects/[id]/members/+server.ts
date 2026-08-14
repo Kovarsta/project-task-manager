@@ -9,8 +9,14 @@ export async function GET(event: RequestEvent) {
 	const projectId = parseIdParam(event.params.id, 'projectId');
 	await requireProjectMember(event, projectId);
 
+	// Minimal mode: only id/name/email for assignee dropdowns — skips the
+	// expensive counts + per-member task aggregation. Used by the layout.
+	const minimal = event.url.searchParams.get('fields') === 'minimal';
+
 	const page = Math.max(1, Number(event.url.searchParams.get('page') ?? 1));
-	const limit = Math.min(50, Math.max(1, Number(event.url.searchParams.get('limit') ?? 20)));
+	const limit = minimal
+		? Math.min(200, Math.max(1, Number(event.url.searchParams.get('limit') ?? 200)))
+		: Math.min(50, Math.max(1, Number(event.url.searchParams.get('limit') ?? 20)));
 	const q = event.url.searchParams.get('q')?.trim() ?? '';
 	const role = event.url.searchParams.get('role')?.trim() ?? '';
 
@@ -25,6 +31,20 @@ export async function GET(event: RequestEvent) {
 	}
 	if (role === 'ADMIN' || role === 'MEMBER') {
 		where.role = role;
+	}
+
+	if (minimal) {
+		const members = await prisma.projectMember.findMany({
+			where,
+			include: { user: { select: { id: true, name: true, email: true } } },
+			orderBy: [{ isOwner: 'desc' }, { role: 'asc' }, { joinedAt: 'asc' }, { id: 'asc' }],
+			skip: (page - 1) * limit,
+			take: limit
+		});
+		return json({
+			members,
+			meta: { page, limit, total: members.length, totalPages: 1 }
+		});
 	}
 
 	const [members, total, memberCount, adminCount] = await Promise.all([

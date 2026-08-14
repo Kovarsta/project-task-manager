@@ -2,6 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireProjectAdmin, requireProjectMember } from '$lib/server/auth';
 import { logActivity } from '$lib/server/activity';
+import { invalidateMembershipCaches } from '$lib/server/invalidate';
 import type { RequestEvent } from '@sveltejs/kit';
 import { parseIdParam } from '$lib/server/helpers';
 
@@ -37,6 +38,8 @@ export async function DELETE(event: RequestEvent) {
 		entityId: targetId,
 		metadata: { name: target.user.name }
 	});
+
+	await invalidateMembershipCaches(projectId, targetId);
 
 	return json({ success: true });
 }
@@ -109,6 +112,8 @@ export async function PATCH(event: RequestEvent) {
 		entityId: targetId,
 		metadata: { name: target.user.name, oldRole: target.role, newRole: body.role }
 	});
+
+	await invalidateMembershipCaches(projectId, targetId);
 
 	return json(updated);
 }

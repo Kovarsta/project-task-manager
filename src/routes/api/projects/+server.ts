@@ -7,7 +7,7 @@ import { projectSearchFilter } from '$lib/server/project-search';
 import type { Prisma } from '@prisma/client';
 import type { RequestEvent } from '@sveltejs/kit';
 import { cached } from '$lib/server/cache';
-import { getRedis } from '$lib/server/redis';
+import { invalidateDashboardCaches } from '$lib/server/invalidate';
 
 // GET: View all projects
 export async function GET(event: RequestEvent) {
@@ -37,8 +37,8 @@ export async function GET(event: RequestEvent) {
 		deactivatedAt: null
 	});
 
-	const fetchProjects = () =>
-		Promise.all([
+	const fetchProjects = async () => {
+		const [myProjects, myTotal, sharedProjects, sharedTotal] = await Promise.all([
 			prisma.project.findMany({
 				where: myWhere,
 				include: { _count: { select: { tasks: { where: { status: { not: 'DONE' } } } } } },
@@ -57,25 +57,28 @@ export async function GET(event: RequestEvent) {
 			prisma.project.count({ where: sharedWhere })
 		]);
 
-	const [myProjects, myTotal, sharedProjects, sharedTotal] = shouldCache
+		// Aggregate attention data: count of assigned tasks + earliest due per project
+		const allProjectIds = [...myProjects, ...sharedProjects].map((p) => p.id);
+		const attentionAgg =
+			allProjectIds.length > 0
+				? await prisma.task.groupBy({
+						by: ['projectId'],
+						where: {
+							projectId: { in: allProjectIds },
+							assigneeId: user.id,
+							status: { not: 'DONE' }
+						},
+						_count: { projectId: true },
+						_min: { dueDate: true }
+					})
+				: [];
+
+		return { myProjects, myTotal, sharedProjects, sharedTotal, attentionAgg };
+	};
+
+	const { myProjects, myTotal, sharedProjects, sharedTotal, attentionAgg } = shouldCache
 		? await cached(key, 60, fetchProjects)
 		: await fetchProjects();
-
-	// Aggregate attention data: count of assigned tasks + earliest due per project
-	const allProjectIds = [...myProjects, ...sharedProjects].map((p) => p.id);
-	const attentionAgg =
-		allProjectIds.length > 0
-			? await prisma.task.groupBy({
-					by: ['projectId'],
-					where: {
-						projectId: { in: allProjectIds },
-						assigneeId: user.id,
-						status: { not: 'DONE' }
-					},
-					_count: { projectId: true },
-					_min: { dueDate: true }
-				})
-			: [];
 
 	// Build lookup: projectId -> { count, earliestDue }
 	const attentionMap = new Map<number, { count: number; earliestDue: string | null }>();
@@ -158,8 +161,7 @@ export async function POST(event: RequestEvent) {
 		metadata: { name }
 	});
 
-	const redis = await getRedis();
-	if (redis) await redis.del(`dashboard:${user.id}:page:1:limit:20`);
+	await invalidateDashboardCaches(user.id);
 
 	return json(project, { status: 201 });
 }

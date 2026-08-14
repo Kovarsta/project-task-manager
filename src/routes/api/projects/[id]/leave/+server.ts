@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireProjectMember } from '$lib/server/auth';
+import { invalidateMembershipCaches } from '$lib/server/invalidate';
 import type { RequestEvent } from '@sveltejs/kit';
 import { parseIdParam } from '$lib/server/helpers';
 
@@ -35,6 +36,8 @@ export async function POST(event: RequestEvent) {
 			}
 		}
 	});
+
+	await invalidateMembershipCaches(projectId, user.id);
 
 	return json({ success: true });
 }

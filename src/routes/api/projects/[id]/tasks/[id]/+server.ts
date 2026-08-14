@@ -7,7 +7,7 @@ import type { RequestEvent } from '@sveltejs/kit';
 import { parseIdParam } from '$lib/server/helpers';
 import { TaskStatus, TaskPriority } from '@prisma/client';
 import { cached } from '$lib/server/cache';
-import { getRedis } from '$lib/server/redis';
+import { invalidateTaskCaches } from '$lib/server/invalidate';
 
 const taskInclude = {
 	assignee: { select: { id: true, name: true, email: true } as const },
@@ -152,14 +152,7 @@ export async function PATCH(event: RequestEvent) {
 		}
 	});
 
-	const redis = await getRedis();
-	if (redis) {
-		await redis.del(`task:${taskId}`);
-		await redis.del(`kanban:${task.projectId}:all:page:1`);
-		for (const s of ['TODO', 'DOING', 'DONE']) {
-			await redis.del(`kanban:${task.projectId}:status:${s}:page:1`);
-		}
-	}
+	await invalidateTaskCaches(task.projectId, taskId);
 
 	return json(updatedTask);
 }
@@ -180,14 +173,7 @@ export async function DELETE(event: RequestEvent) {
 	});
 
 	await prisma.task.delete({ where: { id: taskId } });
-	const redis = await getRedis();
-	if (redis) {
-		await redis.del(`task:${taskId}`);
-		await redis.del(`kanban:${task.projectId}:all:page:1`);
-		for (const s of ['TODO', 'DOING', 'DONE']) {
-			await redis.del(`kanban:${task.projectId}:status:${s}:page:1`);
-		}
-	}
+	await invalidateTaskCaches(task.projectId, taskId);
 
 	return json({ success: true });
 }

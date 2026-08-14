@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireSuperAdmin } from '$lib/server/auth';
+import { invalidateProjectCaches } from '$lib/server/invalidate';
 import type { RequestEvent } from '@sveltejs/kit';
 import { parseIdParam } from '$lib/server/helpers';
 
@@ -28,6 +29,8 @@ export async function PATCH(event: RequestEvent) {
 		where: { id: projectId },
 		data: { deactivatedAt: action === 'deactivate' ? new Date() : null }
 	});
+
+	await invalidateProjectCaches(projectId);
 
 	return json(updated);
 }

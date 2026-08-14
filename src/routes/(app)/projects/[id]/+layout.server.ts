@@ -9,11 +9,12 @@ export const load: LayoutServerLoad = async (event) => {
 	const project = await serverFetch(event, `/api/projects/${event.params.id}`);
 
 	// Load members for admin features (modals etc.) — only when the user is admin.
+	// Minimal mode: id/name/email only, skips the counts/aggregations.
 	let members: unknown[] = [];
 	const myMembership = project.members?.[0];
 	if (myMembership && (myMembership.role === 'ADMIN' || myMembership.isOwner)) {
 		try {
-			const res = await event.fetch(`/api/projects/${event.params.id}/members?limit=200`);
+			const res = await event.fetch(`/api/projects/${event.params.id}/members?limit=200&fields=minimal`);
 			if (res.ok) {
 				const body = await res.json();
 				members = body.members;

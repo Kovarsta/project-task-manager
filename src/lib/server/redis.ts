@@ -4,7 +4,7 @@ const enabled = process.env.REDIS_ENABLED !== 'false';
 const url = process.env.REDIS_URL || 'redis://localhost:6379';
 
 let client: ReturnType<typeof createClient> | null = null;
-let connecting: Promise<void> | null = null;
+let connecting: Promise<unknown> | null = null;
 
 export async function getRedis() {
 	if (!enabled) return null;

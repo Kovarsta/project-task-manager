@@ -1,8 +1,8 @@
 import { handle as authHandle } from './auth';
 import { sequence } from '@sveltejs/kit/hooks';
 import type { Handle } from '@sveltejs/kit';
-import { error } from '@sveltejs/kit';
-import { gzip, brotliCompress } from 'node:zlib';
+import { error, isHttpError } from '@sveltejs/kit';
+import { gzip, brotliCompress, constants as zlibConstants } from 'node:zlib';
 import { promisify } from 'node:util';
 import { createHash } from 'node:crypto';
 import { getRedis } from '$lib/server/redis';
@@ -47,7 +47,13 @@ function hashKey(key: string): string {
 }
 
 function buildRateLimitKey(event: import('@sveltejs/kit').RequestEvent): string {
-	const ip = event.getClientAddress() || 'unknown';
+	let ip: string;
+	try {
+		ip = event.getClientAddress() || 'unknown';
+	} catch {
+		// ADDRESS_HEADER configured but header absent (health checks, direct access)
+		ip = 'unknown';
+	}
 	const ua = event.request.headers.get('user-agent') ?? '';
 	return `${ip}|${ua.slice(0, 64)}`;
 }
@@ -70,12 +76,7 @@ const rateLimiter: Handle = async ({ event, resolve }) => {
 	const key = hashKey(buildRateLimitKey(event));
 	const redis = await getRedis();
 
-	if (redis) {
-		const redisKey = `ratelimit:${key}`;
-		const count = await redis.incr(redisKey);
-		if (count === 1) await redis.expire(redisKey, WINDOW_SECONDS);
-		if (count > MAX_REQUESTS) throw error(429, 'Too many requests — slow down');
-	} else {
+	const applyInMemory = (): ReturnType<Handle> => {
 		const now = Date.now();
 		const entry = fallbackMap.get(key);
 		if (!entry || now > entry.resetAt) {
@@ -90,9 +91,25 @@ const rateLimiter: Handle = async ({ event, resolve }) => {
 		}
 		entry.count++;
 		if (entry.count > MAX_REQUESTS) throw error(429, 'Too many requests — slow down');
+		return resolve(event);
+	};
+
+	if (redis) {
+		try {
+			const redisKey = `ratelimit:${key}`;
+			const count = await redis.incr(redisKey);
+			if (count === 1) await redis.expire(redisKey, WINDOW_SECONDS);
+			if (count > MAX_REQUESTS) throw error(429, 'Too many requests — slow down');
+		} catch (e) {
+			// Redis blip mid-request: fall back to the in-memory limiter so the
+			// site never 500s on a rate-limit infrastructure failure.
+			if (isHttpError(e)) throw e;
+			return applyInMemory();
+		}
+		return resolve(event);
 	}
 
-	return resolve(event);
+	return applyInMemory();
 };
 
 // --- Auth guard ---
@@ -150,7 +167,9 @@ const compressAndCache: Handle = async ({ event, resolve }) => {
 	headers.set('Vary', 'Accept-Encoding');
 
 	if (accept.includes('br')) {
-		const compressed = await brotliAsync(body, { quality: 4 });
+		const compressed = await brotliAsync(body, {
+			params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 4 }
+		});
 		headers.set('Content-Encoding', 'br');
 		headers.set('Content-Length', String(compressed.length));
 		return new Response(compressed, {
@@ -174,6 +193,7 @@ const compressAndCache: Handle = async ({ event, resolve }) => {
 const pageCache: Handle = async ({ event, resolve }) => {
 	if (event.request.method !== 'GET') return resolve(event);
 	if (event.url.pathname.startsWith('/api')) return resolve(event);
+	if (event.url.pathname.startsWith('/_app/')) return resolve(event);
 
 	const userId = event.locals.userId;
 	if (!userId) return resolve(event);
@@ -183,12 +203,14 @@ const pageCache: Handle = async ({ event, resolve }) => {
 
 	const key = `page:${userId}:${event.url.pathname}${event.url.search}`;
 
+	const privateHeaders = { 'cache-control': 'private, no-store' };
+
 	try {
 		const hit = await redis.get(key);
 		if (hit) {
 			return new Response(hit, {
 				status: 200,
-				headers: { 'content-type': 'text/html; charset=utf-8' }
+				headers: { 'content-type': 'text/html; charset=utf-8', ...privateHeaders }
 			});
 		}
 	} catch {
@@ -197,16 +219,26 @@ const pageCache: Handle = async ({ event, resolve }) => {
 
 	const res = await resolve(event);
 	if (res.ok) {
-		const html = await res.text();
-		try {
-			await redis.setEx(key, PAGE_CACHE_TTL_SECONDS, html);
-		} catch {
-			// cache write failed — still serve the page
+		// Only cache actual HTML documents — never JSON or other payloads.
+		const contentType = res.headers.get('content-type') || '';
+		if (contentType.startsWith('text/html')) {
+			const html = await res.text();
+			try {
+				await redis.setEx(key, PAGE_CACHE_TTL_SECONDS, html);
+			} catch {
+				// cache write failed — still serve the page
+			}
+			const headers = new Headers(res.headers);
+			headers.set('cache-control', 'private, no-store');
+			return new Response(html, { status: res.status, statusText: res.statusText, headers });
 		}
-		return new Response(html, res);
 	}
 
 	return res;
 };
 
-export const handle = sequence(rateLimiter, authHandle, authGuard, pageCache, compressAndCache);
+// Order matters: compression is OUTERMOST so it runs last on the response path.
+// pageCache (inner) stores and serves RAW HTML; compressAndCache compresses the
+// final response — on both cache misses AND hits. If pageCache were outer, it
+// would read the already-compressed body and cache/store corrupted HTML.
+export const handle = sequence(rateLimiter, authHandle, authGuard, compressAndCache, pageCache);
