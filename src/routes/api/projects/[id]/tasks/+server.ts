@@ -8,7 +8,7 @@ import { TaskStatus, TaskPriority } from '@prisma/client';
 import { parseIdParam } from '$lib/server/helpers';
 import { taskSearchFilter } from '$lib/server/task-search';
 import { cached } from '$lib/server/cache';
-import { getRedis } from '$lib/server/redis';
+import { invalidateProjectCaches } from '$lib/server/invalidate';
 
 // GET: View all task
 export async function GET(event: RequestEvent) {
@@ -46,8 +46,10 @@ export async function GET(event: RequestEvent) {
 		...(q && taskSearchFilter(q))
 	};
 
-	const shouldCache = page === 1 && !q && !status && !priority && !assignee && !tag;
-	const key = `tasks:${projectId}:page:${page}:limit:${limit}`;
+	// Cache the default first page only; the key must include the sort/order
+	// so two different orderings never share a cache entry.
+	const shouldCache = page === 1 && !q && !status && !priority && !assignee && !tag && sort === 'createdAt' && order === 'desc';
+	const key = `tasks:${projectId}:page:${page}:limit:${limit}:sort:${sort}:order:${order}`;
 
 	const fetchTasks = () =>
 		Promise.all([
@@ -142,14 +144,7 @@ export async function POST(event: RequestEvent) {
 		metadata: { title, status: task.status, assigneeId: task.assigneeId }
 	});
 
-	const redis = await getRedis();
-	if (redis) {
-		await redis.del(`tasks:${projectId}:page:1:limit:20`);
-		await redis.del(`kanban:${projectId}:all:page:1`);
-		for (const s of ['TODO', 'DOING', 'DONE']) {
-			await redis.del(`kanban:${projectId}:status:${s}:page:1`);
-		}
-	}
+	await invalidateProjectCaches(projectId);
 
 	return json(task, { status: 201 });
 }

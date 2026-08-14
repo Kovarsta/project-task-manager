@@ -2,6 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireProjectOwner } from '$lib/server/auth';
 import { logActivity } from '$lib/server/activity';
+import { invalidateMembershipCaches } from '$lib/server/invalidate';
 import type { RequestEvent } from '@sveltejs/kit';
 import { parseIdParam } from '$lib/server/helpers';
 
@@ -40,6 +41,9 @@ export async function POST(event: RequestEvent) {
 		entityId: targetId,
 		metadata: { from: owner.id, to: targetId, toName: target.user.name }
 	});
+
+	await invalidateMembershipCaches(projectId, owner.id);
+	await invalidateMembershipCaches(projectId, targetId);
 
 	return json({ success: true });
 }

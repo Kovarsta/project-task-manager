@@ -2,6 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireProjectAdmin, requireProjectMember, requireProjectOwner } from '$lib/server/auth';
 import { sanitizeHtml } from '$lib/sanitize';
+import { invalidateDashboardCaches, invalidateProjectCaches } from '$lib/server/invalidate';
 import type { RequestEvent } from '@sveltejs/kit';
 
 function getProjectId(event: RequestEvent) {
@@ -92,18 +93,23 @@ export async function PATCH(event: RequestEvent) {
 		data
 	});
 
+	await invalidateProjectCaches(projectId);
+
 	return json(project);
 }
 
 // DELETE: deactivate (soft delete) — owner only
 export async function DELETE(event: RequestEvent) {
 	const projectId = getProjectId(event);
-	await requireProjectOwner(event, projectId);
+	const user = await requireProjectOwner(event, projectId);
 
 	await prisma.project.update({
 		where: { id: projectId },
 		data: { deactivatedAt: new Date() }
 	});
+
+	await invalidateProjectCaches(projectId);
+	await invalidateDashboardCaches(user.id);
 
 	return json({ success: true });
 }

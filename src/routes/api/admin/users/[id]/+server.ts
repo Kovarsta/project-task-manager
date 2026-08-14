@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
 import { requireSuperAdmin } from '$lib/server/auth';
+import { invalidateUserCaches } from '$lib/server/invalidate';
 import type { RequestEvent } from '@sveltejs/kit';
 import { parseIdParam } from '$lib/server/helpers';
 
@@ -54,6 +55,9 @@ export async function PATCH(event: RequestEvent) {
 			_count: { select: { createdProjects: true, memberships: true, createdTasks: true } }
 		}
 	});
+
+	// Demotion / deactivation must propagate to cached sessions immediately.
+	await invalidateUserCaches(user.email);
 
 	return json(user);
 }
