@@ -7,7 +7,6 @@
 	import { Input } from '$lib/components/ui/input';
 	import ProjectCard from '$lib/components/ui/ProjectCard.svelte';
 	import TagInput from '$lib/components/ui/TagInput.svelte';
-	import RichTextEditor from '$lib/components/ui/RichTextEditor.svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { Project } from '$lib/type.js';
 	import { sanitizeHtml } from '$lib/sanitize';
@@ -114,28 +113,28 @@
 
 	function sortProjects(projects: Project[]) {
 		return [...projects].sort((a, b) => {
-				let cmp = 0;
-				if (sortField === 'name') {
-					cmp = a.name.localeCompare(b.name);
-				} else if (sortField === 'tasks') {
-					cmp = a._count.tasks - b._count.tasks;
-				} else if (sortField === 'attention') {
-					const aCount = a._myTaskCount ?? 0;
-					const bCount = b._myTaskCount ?? 0;
-					if (aCount !== bCount) {
-						cmp = aCount - bCount;
-					} else {
-						const aDue = a._earliestDue ? new Date(a._earliestDue).getTime() : Infinity;
-						const bDue = b._earliestDue ? new Date(b._earliestDue).getTime() : Infinity;
-						cmp = bDue - aDue;
-					}
-				} else if (sortField === 'status') {
-					cmp = (STATUS_ORDER[a.status ?? 'ACTIVE'] ?? 0) - (STATUS_ORDER[b.status ?? 'ACTIVE'] ?? 0);
+			let cmp = 0;
+			if (sortField === 'name') {
+				cmp = a.name.localeCompare(b.name);
+			} else if (sortField === 'tasks') {
+				cmp = a._count.tasks - b._count.tasks;
+			} else if (sortField === 'attention') {
+				const aCount = a._myTaskCount ?? 0;
+				const bCount = b._myTaskCount ?? 0;
+				if (aCount !== bCount) {
+					cmp = aCount - bCount;
 				} else {
-					cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+					const aDue = a._earliestDue ? new Date(a._earliestDue).getTime() : Infinity;
+					const bDue = b._earliestDue ? new Date(b._earliestDue).getTime() : Infinity;
+					cmp = bDue - aDue;
 				}
-				return sortDir === 'asc' ? cmp : -cmp;
-			});
+			} else if (sortField === 'status') {
+				cmp = (STATUS_ORDER[a.status ?? 'ACTIVE'] ?? 0) - (STATUS_ORDER[b.status ?? 'ACTIVE'] ?? 0);
+			} else {
+				cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+			}
+			return sortDir === 'asc' ? cmp : -cmp;
+		});
 	}
 
 	let filteredMy = $derived.by(() => sortProjects(myProjects));
@@ -282,12 +281,32 @@
 
 <!-- Create Modal -->
 <Dialog.Root bind:open={showCreate}>
-	<Dialog.Content class="max-w-lg" showCloseButton={false} onInteractOutside={onInteractOutsideCreate} onEscapeKeydown={onEscapeKeydownCreate}>
+	<Dialog.Content
+		class="max-w-lg"
+		showCloseButton={false}
+		onInteractOutside={onInteractOutsideCreate}
+		onEscapeKeydown={onEscapeKeydownCreate}
+	>
 		<Dialog.Header>
 			<div class="flex items-center justify-between">
 				<Dialog.Title>Create a new project</Dialog.Title>
-				<button type="button" aria-label="Close" onclick={requestCreateClose} class="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
-					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+				<button
+					type="button"
+					aria-label="Close"
+					onclick={requestCreateClose}
+					class="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg
+					>
 				</button>
 			</div>
 		</Dialog.Header>
@@ -310,7 +329,15 @@
 
 			<div>
 				<label for="cp-description" class="mb-1 block text-sm font-medium">Description</label>
-				<RichTextEditor bind:content={newDescription} placeholder="Describe the project..." />
+				{#if showCreate}
+					{#await import('$lib/components/ui/RichTextEditor.svelte')}
+						<div class="min-h-32 rounded-md border border-input bg-muted/30"></div>
+					{:then { default: RichTextEditor }}
+						<RichTextEditor bind:content={newDescription} placeholder="Describe the project..." />
+					{/await}
+				{:else}
+					<div class="min-h-32 rounded-md border border-input bg-muted/30"></div>
+				{/if}
 				<p class="mt-1 text-xs {descChars > 60 ? 'text-red-500' : 'text-muted-foreground/60'}">
 					{descChars}/60 characters
 				</p>
@@ -339,13 +366,32 @@
 
 		{#if showConfirmCreateClose}
 			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-			<div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onclick={() => (showConfirmCreateClose = false)} onkeydown={(e) => e.key === 'Escape' && (showConfirmCreateClose = false)} role="presentation">
-				<div tabindex="-1" class="mx-4 w-full max-w-sm rounded-xl bg-popover p-6 text-sm shadow-lg ring-1 ring-foreground/10" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog">
+			<div
+				class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40"
+				onclick={() => (showConfirmCreateClose = false)}
+				onkeydown={(e) => e.key === 'Escape' && (showConfirmCreateClose = false)}
+				role="presentation"
+			>
+				<div
+					tabindex="-1"
+					class="mx-4 w-full max-w-sm rounded-xl bg-popover p-6 text-sm shadow-lg ring-1 ring-foreground/10"
+					onclick={(e) => e.stopPropagation()}
+					onkeydown={(e) => e.stopPropagation()}
+					role="dialog"
+				>
 					<h3 class="text-base font-semibold text-foreground">Discard changes?</h3>
-					<p class="mt-2 text-muted-foreground">You have unsaved changes. Are you sure you want to discard them?</p>
+					<p class="mt-2 text-muted-foreground">
+						You have unsaved changes. Are you sure you want to discard them?
+					</p>
 					<div class="mt-4 flex gap-2">
-						<Button variant="outline" class="flex-1" onclick={() => (showConfirmCreateClose = false)}>Keep editing</Button>
-						<Button variant="destructive" class="flex-1" onclick={discardCreateAndClose}>Discard</Button>
+						<Button
+							variant="outline"
+							class="flex-1"
+							onclick={() => (showConfirmCreateClose = false)}>Keep editing</Button
+						>
+						<Button variant="destructive" class="flex-1" onclick={discardCreateAndClose}
+							>Discard</Button
+						>
 					</div>
 				</div>
 			</div>

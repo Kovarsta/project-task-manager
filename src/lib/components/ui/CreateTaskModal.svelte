@@ -5,7 +5,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import UserSearchSelect from '$lib/components/ui/UserSearchSelect.svelte';
 	import TagInput from '$lib/components/ui/TagInput.svelte';
-	import RichTextEditor from '$lib/components/ui/RichTextEditor.svelte';
 	import NativeSelect from '$lib/components/ui/NativeSelect.svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { sanitizeHtml } from '$lib/sanitize';
@@ -38,7 +37,15 @@
 	let showConfirmClose = $state(false);
 
 	function hasUnsaved() {
-		return title.trim() || description || tags.length || status !== 'TODO' || priority !== 'MEDIUM' || dueDate || assigneeId;
+		return (
+			title.trim() ||
+			description ||
+			tags.length ||
+			status !== 'TODO' ||
+			priority !== 'MEDIUM' ||
+			dueDate ||
+			assigneeId
+		);
 	}
 
 	function onInteractOutside(e: Event) {
@@ -155,12 +162,32 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="max-w-2xl overflow-y-visible max-h-none" showCloseButton={false} {onInteractOutside} {onEscapeKeydown}>
+	<Dialog.Content
+		class="max-h-none max-w-2xl overflow-y-visible"
+		showCloseButton={false}
+		{onInteractOutside}
+		{onEscapeKeydown}
+	>
 		<Dialog.Header>
 			<div class="flex items-center justify-between">
 				<Dialog.Title>Create Task</Dialog.Title>
-				<button type="button" aria-label="Close" onclick={requestClose} class="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
-					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+				<button
+					type="button"
+					aria-label="Close"
+					onclick={requestClose}
+					class="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg
+					>
 				</button>
 			</div>
 		</Dialog.Header>
@@ -187,11 +214,19 @@
 				<!-- Description (rich text) -->
 				<div>
 					<label for="ct-description" class="mb-1 block text-sm font-medium">Description</label>
-					<RichTextEditor
-						bind:content={description}
-						disabled={creating}
-						placeholder="Describe the task..."
-					/>
+					{#if open}
+						{#await import('$lib/components/ui/RichTextEditor.svelte')}
+							<div class="min-h-32 rounded-md border border-input bg-muted/30"></div>
+						{:then { default: RichTextEditor }}
+							<RichTextEditor
+								bind:content={description}
+								disabled={creating}
+								placeholder="Describe the task..."
+							/>
+						{/await}
+					{:else}
+						<div class="min-h-32 rounded-md border border-input bg-muted/30"></div>
+					{/if}
 					{#if errors.description}
 						<p class="mt-1 text-xs text-red-500">
 							Description plain text must be under 2000 characters
@@ -242,7 +277,14 @@
 						class="cursor-pointer"
 					>
 						<label for="ct-dueDate" class="mb-1 block text-sm font-medium">Due Date</label>
-						<Input id="ct-dueDate" type="date" bind:value={dueDate} bind:ref={dueDateInput} class="cursor-pointer" min={today} />
+						<Input
+							id="ct-dueDate"
+							type="date"
+							bind:value={dueDate}
+							bind:ref={dueDateInput}
+							class="cursor-pointer"
+							min={today}
+						/>
 					</div>
 					<div>
 						<label class="mb-1 block text-sm font-medium">
@@ -266,12 +308,27 @@
 
 		{#if showConfirmClose}
 			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-			<div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onclick={() => (showConfirmClose = false)} onkeydown={(e) => e.key === 'Escape' && (showConfirmClose = false)} role="presentation">
-				<div tabindex="-1" class="mx-4 w-full max-w-sm rounded-xl bg-popover p-6 text-sm shadow-lg ring-1 ring-foreground/10" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog">
+			<div
+				class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40"
+				onclick={() => (showConfirmClose = false)}
+				onkeydown={(e) => e.key === 'Escape' && (showConfirmClose = false)}
+				role="presentation"
+			>
+				<div
+					tabindex="-1"
+					class="mx-4 w-full max-w-sm rounded-xl bg-popover p-6 text-sm shadow-lg ring-1 ring-foreground/10"
+					onclick={(e) => e.stopPropagation()}
+					onkeydown={(e) => e.stopPropagation()}
+					role="dialog"
+				>
 					<h3 class="text-base font-semibold text-foreground">Discard changes?</h3>
-					<p class="mt-2 text-muted-foreground">You have unsaved changes. Are you sure you want to discard them?</p>
+					<p class="mt-2 text-muted-foreground">
+						You have unsaved changes. Are you sure you want to discard them?
+					</p>
 					<div class="mt-4 flex gap-2">
-						<Button variant="outline" class="flex-1" onclick={() => (showConfirmClose = false)}>Keep editing</Button>
+						<Button variant="outline" class="flex-1" onclick={() => (showConfirmClose = false)}
+							>Keep editing</Button
+						>
 						<Button variant="destructive" class="flex-1" onclick={discardAndClose}>Discard</Button>
 					</div>
 				</div>

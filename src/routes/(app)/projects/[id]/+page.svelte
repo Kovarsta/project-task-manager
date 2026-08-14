@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import Chart from 'chart.js/auto';
+	import type Chart from 'chart.js/auto';
 	import { AlertTriangle, Clock, CheckCircle2, ListTodo, ArrowRight } from '@lucide/svelte';
 	import type { Task } from '$lib/type';
 	import type { ActivityItem } from '$lib/activity';
@@ -36,28 +36,38 @@
 	onMount(() => {
 		if (!hasChartData || !canvasEl) return;
 
-		chartInstance = new Chart(canvasEl, {
-			type: 'doughnut',
-			data: {
-				labels: data.summary.chart.labels,
-				datasets: [
-					{
-						data: data.summary.chart.data,
-						backgroundColor: data.summary.chart.colors,
-						borderWidth: 0
-					}
-				]
-			},
-			options: {
-				responsive: true,
-				maintainAspectRatio: false,
-				plugins: {
-					legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 } } }
-				}
-			}
-		});
+		let destroyed = false;
 
-		return () => chartInstance?.destroy();
+		void import('chart.js/auto')
+			.then(({ default: ChartClass }) => {
+				if (destroyed) return;
+				chartInstance = new ChartClass(canvasEl!, {
+					type: 'doughnut',
+					data: {
+						labels: data.summary.chart.labels,
+						datasets: [
+							{
+								data: data.summary.chart.data,
+								backgroundColor: data.summary.chart.colors,
+								borderWidth: 0
+							}
+						]
+					},
+					options: {
+						responsive: true,
+						maintainAspectRatio: false,
+						plugins: {
+							legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 } } }
+						}
+					}
+				});
+			})
+			.catch(() => undefined);
+
+		return () => {
+			destroyed = true;
+			chartInstance?.destroy();
+		};
 	});
 
 	const priorityColors: Record<string, string> = {
@@ -72,8 +82,6 @@
 		if (!dueDateStr) return false;
 		return isOverdueDate(dueDateStr);
 	}
-
-
 </script>
 
 <div class="space-y-6">
