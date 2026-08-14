@@ -61,6 +61,7 @@ model User {
 
   @@index([email])
   @@index([deactivatedAt])
+  @@index([name])
 }
 
 model Project {
@@ -83,6 +84,8 @@ model Project {
   @@index([createdById])
   @@index([deactivatedAt])
   @@index([status])
+  @@index([createdById, createdAt])
+  @@index([tags], type: Gin)
 }
 
 model ProjectMember {
@@ -98,6 +101,7 @@ model ProjectMember {
   @@unique([projectId, userId])
   @@index([userId])
   @@index([role])
+  @@index([projectId, role, joinedAt])
 }
 
 model ProjectInvite {
@@ -119,6 +123,8 @@ model ProjectInvite {
   @@index([status])
   @@index([invitedEmail])
   @@index([invitedById])
+  @@index([projectId, createdAt])
+  @@index([projectId, invitedEmail, status])
 }
 
 model Task {
@@ -153,6 +159,8 @@ model Task {
   @@index([assigneeId, status, projectId])
   @@index([projectId, completedAt])
   @@index([completedAt])
+  @@index([projectId, createdAt])
+  @@index([tags], type: Gin)
 }
 
 model TaskStatusHistory {
