@@ -7,7 +7,6 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import NativeSelect from '$lib/components/ui/NativeSelect.svelte';
 	import TagInput from '$lib/components/ui/TagInput.svelte';
-	import RichTextEditor from '$lib/components/ui/RichTextEditor.svelte';
 	import UserSearchSelect from '$lib/components/ui/UserSearchSelect.svelte';
 	import { sanitizeHtml } from '$lib/sanitize';
 
@@ -90,20 +89,20 @@
 		saving = true;
 		try {
 			const sanitizedDesc = sanitizeHtml(description.trim());
-		const body: Record<string, unknown> = {
-			name: name.trim(),
-			status,
-			deadline: deadline || null,
-			tags
-		};
-		if (sanitizedDesc) {
-			body.description = sanitizedDesc;
-		}
-		const res = await fetch(`/api/projects/${projectId}`, {
-			method: 'PATCH',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(body)
-		});
+			const body: Record<string, unknown> = {
+				name: name.trim(),
+				status,
+				deadline: deadline || null,
+				tags
+			};
+			if (sanitizedDesc) {
+				body.description = sanitizedDesc;
+			}
+			const res = await fetch(`/api/projects/${projectId}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(body)
+			});
 
 			if (!res.ok) {
 				const err = await res.json();
@@ -166,7 +165,11 @@
 	<div>
 		<label class="text-base font-medium">Description</label>
 		<div class="mt-1">
-			<RichTextEditor bind:content={description} placeholder="Describe the project..." />
+			{#await import('$lib/components/ui/RichTextEditor.svelte')}
+				<div class="min-h-32 rounded-md border border-input bg-muted/30"></div>
+			{:then { default: RichTextEditor }}
+				<RichTextEditor bind:content={description} placeholder="Describe the project..." />
+			{/await}
 		</div>
 		<p class="mt-1 text-xs {descChars > 60 ? 'text-red-500' : 'text-muted-foreground/60'}">
 			{descChars}/60 characters
@@ -205,7 +208,7 @@
 
 <h3 class="mb-4 text-lg font-semibold">Ownership</h3>
 {#if data.admins.length > 0}
-		<div class="mb-8 max-w-lg">
+	<div class="mb-8 max-w-lg">
 		<label class="text-sm font-medium">Transfer Ownership</label>
 		<p class="mb-2 text-xs text-muted-foreground">
 			Transfer the project owner role to another admin.
@@ -237,7 +240,10 @@
 	<p class="mb-2 text-sm font-medium text-red-500">Danger zone</p>
 	<Button
 		class="w-full bg-red-400 text-red-950 hover:bg-red-500"
-		onclick={() => { showDeleteConfirm = true; deleteConfirmName = ''; }}
+		onclick={() => {
+			showDeleteConfirm = true;
+			deleteConfirmName = '';
+		}}
 	>
 		Delete Project
 	</Button>
@@ -265,7 +271,12 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<Dialog.Root bind:open={showDeleteConfirm} onOpenChange={(o) => { if (!o) deleteConfirmName = ''; }}>
+<Dialog.Root
+	bind:open={showDeleteConfirm}
+	onOpenChange={(o) => {
+		if (!o) deleteConfirmName = '';
+	}}
+>
 	<Dialog.Content class="max-w-sm">
 		<Dialog.Header>
 			<Dialog.Title>Delete this project?</Dialog.Title>

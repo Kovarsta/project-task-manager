@@ -64,11 +64,20 @@
 		draggedTask = task;
 	}
 
-	async function onDrop(newStatus: 'TODO' | 'DOING' | 'DONE') {
+	async function onDrop(newStatus: ColumnKey) {
 		if (!draggedTask || draggedTask.status === newStatus) return;
 
 		const task = draggedTask;
 		draggedTask = null;
+
+		const fromStatus = task.status as ColumnKey;
+		const fromCol = columnStates[fromStatus];
+		const toCol = columnStates[newStatus];
+
+		// Optimistic move — reconcile with the server afterwards
+		fromCol.tasks = fromCol.tasks.filter((t) => t.id !== task.id);
+		toCol.tasks = [task, ...toCol.tasks];
+		task.status = newStatus;
 
 		try {
 			const res = await fetch(`/api/projects/${projectId}/tasks/${task.id}`, {
@@ -80,12 +89,15 @@
 			if (!res.ok) {
 				const err = await res.json();
 				toast.error(err.message);
+				await Promise.all([reloadColumn(fromStatus), reloadColumn(newStatus)]);
 				return;
 			}
 
 			await invalidateAll();
+			await Promise.all([reloadColumn(fromStatus), reloadColumn(newStatus)]);
 		} catch {
 			toast.error('Failed to update task status');
+			await Promise.all([reloadColumn(fromStatus), reloadColumn(newStatus)]);
 		}
 	}
 
@@ -155,6 +167,32 @@
 		await loadPage(status);
 	}
 
+	async function reloadAllColumns() {
+		await Promise.all((['TODO', 'DOING', 'DONE'] as const).map((status) => reloadColumn(status)));
+	}
+
+	async function loadInitialBatch() {
+		const statuses = ['TODO', 'DOING', 'DONE'] as const;
+		for (const status of statuses) columnStates[status].loading = true;
+
+		try {
+			const res = await fetch(`/api/projects/${projectId}/kanban`);
+			if (!res.ok) throw new Error('failed');
+			const json = await res.json();
+			for (const status of statuses) {
+				const col = columnStates[status];
+				const data = json[status];
+				col.tasks = data?.tasks ?? [];
+				col.page = 1;
+				col.hasMore = data?.meta?.hasMore ?? false;
+			}
+		} catch {
+			toast.error('Failed to load board');
+		} finally {
+			for (const status of statuses) columnStates[status].loading = false;
+		}
+	}
+
 	let searchTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 	let observers: IntersectionObserver[] = [];
 
@@ -164,9 +202,7 @@
 	}
 
 	onMount(() => {
-		for (const status of ['TODO', 'DOING', 'DONE'] as const) {
-			loadPage(status as ColumnKey);
-		}
+		loadInitialBatch();
 
 		for (const status of ['TODO', 'DOING', 'DONE'] as const) {
 			const sentinel = sentinelEls[status];
@@ -238,7 +274,7 @@
 								{#if task.assignee}
 									<span class="text-xs text-muted-foreground">{task.assignee.name}</span>
 								{:else}
-									<span class="text-xs text-muted-foreground">{'-'}</span>
+									<span class="text-xs text-muted-foreground">-</span>
 								{/if}
 							</div>
 							{#if task.dueDate}
@@ -278,7 +314,10 @@
 		projectId={Number(page.params.id)}
 		isAdmin={data.isAdmin}
 		members={data.members}
-		onUpdate={() => invalidateAll()}
+		onUpdate={() => {
+			invalidateAll();
+			reloadAllColumns();
+		}}
 	/>
 {/if}
 
@@ -287,5 +326,5 @@
 	projectId={Number(projectId)}
 	members={data.members}
 	defaultStatus={createDefaultStatus}
-	onCreated={() => invalidateAll()}
+	onCreated={() => reloadAllColumns()}
 />
