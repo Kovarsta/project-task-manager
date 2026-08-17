@@ -29,7 +29,7 @@ export async function requireAuth(event: RequestEvent) {
 		}
 	}
 
-	const session = await event.locals.auth();
+	const session = event.locals.session;
 	if (!session?.user?.email) throw error(401, 'Unauthorized');
 
 	const user = await findActiveUser({ email: session.user.email });
@@ -53,7 +53,7 @@ async function getAuthAndMember(event: RequestEvent, projectId: number) {
 	let userId = event.locals.userId;
 
 	if (!userId) {
-		const session = await event.locals.auth();
+		const session = event.locals.session;
 		if (!session?.user?.email) throw error(401, 'Unauthorized');
 		const user = await findActiveUser({ email: session.user.email });
 		if (!user || user.deactivatedAt) throw error(401, 'Unauthorized');

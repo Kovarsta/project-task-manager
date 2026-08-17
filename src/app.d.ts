@@ -31,9 +31,10 @@ declare module '@auth/core/types' {
 
 declare global {
 	namespace App {
-		interface Locals {
-			userId?: number;
-		}
+	interface Locals {
+		userId?: number;
+		session?: import('@auth/sveltekit').Session | null;
+	}
 	}
 }
 
