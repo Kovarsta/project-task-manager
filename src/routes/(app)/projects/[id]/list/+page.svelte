@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { invalidateAll } from '$app/navigation';
-	import { Ellipsis, ArrowUp, ArrowDown, Search } from '@lucide/svelte';
+	import { Ellipsis, ArrowUp, ArrowDown, Filter, Search } from '@lucide/svelte';
+	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import TaskDetailModal from '$lib/components/ui/TaskDetailModal.svelte';
 	import Pagination from '$lib/components/ui/Pagination.svelte';
@@ -15,12 +16,32 @@
 			project: Project;
 			isAdmin: boolean;
 			query: string;
+			sort: string;
+			order: 'asc' | 'desc';
 		};
 	}>();
 
+	const SERVER_SORT_FIELDS: [string, string][] = [
+		['createdAt', 'Newest'],
+		['title', 'Name'],
+		['dueDate', 'Due date'],
+		['priority', 'Priority'],
+		['status', 'Status']
+	];
+
+	const DEFAULT_DIR: Record<string, 'asc' | 'desc'> = {
+		createdAt: 'desc',
+		title: 'asc',
+		dueDate: 'asc',
+		priority: 'desc',
+		status: 'asc'
+	};
+
 	let search = $state(data.query);
-	let sortField = $state<keyof Task>('title');
-	let sortDir = $state<'asc' | 'desc'>('asc');
+	let sortField = $state<string>(data.sort);
+	let sortDir = $state<'asc' | 'desc'>(data.order === 'asc' ? 'asc' : 'desc');
+	let pageSortField = $state<keyof Task>('title');
+	let pageSortDir = $state<'asc' | 'desc'>('asc');
 
 	let selectedTask = $state<Task | null>(null);
 	let showDetail = $state(false);
@@ -30,48 +51,61 @@
 
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-	function submitSearch(value: string) {
+	function buildParams(pageNum: number) {
+		let params = `page=${pageNum}&limit=${limit}`;
+		if (search.trim()) params += `&q=${encodeURIComponent(search.trim())}`;
+		if (sortField !== 'createdAt' || sortDir !== 'desc')
+			params += `&sort=${sortField}&order=${sortDir}`;
+		return params;
+	}
+
+	function submitSearch() {
 		clearTimeout(debounceTimer);
 		debounceTimer = setTimeout(() => {
 			currentPage = 1;
-			const params = new URLSearchParams({ page: '1', limit: String(limit) });
-			if (value.trim()) params.set('q', value.trim());
-			goto(`?${params}`, { keepFocus: true });
+			goto(`?${buildParams(1)}`, { keepFocus: true });
 		}, 300);
 	}
 
 	function reload() {
-		const params = new URLSearchParams({ page: String(currentPage), limit: String(limit) });
-		if (search.trim()) params.set('q', search.trim());
-		goto(`?${params}`, { keepFocus: true });
+		goto(`?${buildParams(currentPage)}`, { keepFocus: true });
+	}
+
+	function handleServerSort(field: string) {
+		const newDir =
+			sortField === field ? (sortDir === 'asc' ? 'desc' : 'asc') : (DEFAULT_DIR[field] ?? 'asc');
+		sortField = field;
+		sortDir = newDir;
+		currentPage = 1;
+		goto(`?${buildParams(1)}`, { keepFocus: true });
 	}
 
 	let sorted = $derived.by(() => {
 		const result = [...data.tasks];
 		result.sort((a, b) => {
-			let aVal = '';
-			let bVal = '';
-			if (sortField === 'assignee') {
+			let aVal: string;
+			let bVal: string;
+			if (pageSortField === 'assignee') {
 				aVal = a.assignee?.name ?? '';
 				bVal = b.assignee?.name ?? '';
-			} else if (sortField === 'tags') {
+			} else if (pageSortField === 'tags') {
 				aVal = (a.tags ?? []).join(', ');
 				bVal = (b.tags ?? []).join(', ');
 			} else {
-				aVal = String(a[sortField] ?? '');
-				bVal = String(b[sortField] ?? '');
+				aVal = String(a[pageSortField] ?? '');
+				bVal = String(b[pageSortField] ?? '');
 			}
-			return sortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+			return pageSortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
 		});
 		return result;
 	});
 
-	function toggleSort(field: keyof Task) {
-		if (sortField === field) {
-			sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+	function togglePageSort(field: keyof Task) {
+		if (pageSortField === field) {
+			pageSortDir = pageSortDir === 'asc' ? 'desc' : 'asc';
 		} else {
-			sortField = field;
-			sortDir = 'asc';
+			pageSortField = field;
+			pageSortDir = 'asc';
 		}
 	}
 
@@ -117,15 +151,37 @@
 <div class="flex h-full flex-col">
 	<div class="flex-1 overflow-y-auto">
 		<!-- Search -->
-		<div class="relative mb-4">
-			<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-			<Input
-				bind:value={search}
-				placeholder="Search by name, assignee, due date, tags..."
-				class="pl-9"
-				oninput={() => submitSearch(search)}
-				onkeydown={(e: KeyboardEvent) => e.key === ' ' && search === '' && e.preventDefault()}
-			/>
+		<div class="mb-4">
+			<div class="relative">
+				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+				<Input
+					bind:value={search}
+					placeholder="Search by name, assignee, due date, tags..."
+					class="pl-9"
+					oninput={() => submitSearch()}
+					onkeydown={(e: KeyboardEvent) => e.key === ' ' && search === '' && e.preventDefault()}
+				/>
+			</div>
+			<div class="mt-2 flex flex-wrap items-stretch gap-1">
+				{#each SERVER_SORT_FIELDS as [field, label] (field)}
+					<Button
+						variant={sortField === field ? 'secondary' : 'ghost'}
+						size="sm"
+						class="flex-auto text-xs"
+						onclick={() => handleServerSort(field)}
+					>
+						<Filter class="h-3.5 w-3.5" />
+						{label}
+						{#if sortField === field}
+							{#if sortDir === 'asc'}
+								<ArrowUp class="h-3.5 w-3.5" />
+							{:else}
+								<ArrowDown class="h-3.5 w-3.5" />
+							{/if}
+						{/if}
+					</Button>
+				{/each}
+			</div>
 		</div>
 
 		<!-- Table -->
@@ -136,12 +192,12 @@
 						{#each [['title', 'Name'], ['status', 'Status'], ['priority', 'Priority'], ['dueDate', 'Due date'], ['assignee', 'Assignee'], ['tags', 'Tags']] as [field, label] (field)}
 							<th
 								class="cursor-pointer px-4 py-2 text-left font-medium select-none"
-								onclick={() => toggleSort(field as keyof Task)}
+								onclick={() => togglePageSort(field as keyof Task)}
 							>
 								<span class="inline-flex items-center gap-1">
 									{label}
-									{#if sortField === field}
-										{#if sortDir === 'asc'}
+									{#if pageSortField === field}
+										{#if pageSortDir === 'asc'}
 											<ArrowUp class="h-3 w-3" />
 										{:else}
 											<ArrowDown class="h-3 w-3" />

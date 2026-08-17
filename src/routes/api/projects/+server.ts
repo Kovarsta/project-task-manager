@@ -17,9 +17,19 @@ export async function GET(event: RequestEvent) {
 	const limit = Math.min(50, Math.max(1, Number(event.url.searchParams.get('limit') ?? 20)));
 	const skip = (page - 1) * limit;
 	const q = event.url.searchParams.get('q') ?? '';
+	const sortBy = event.url.searchParams.get('sort') ?? 'createdAt';
+	const order = event.url.searchParams.get('order') === 'asc' ? 'asc' : 'desc';
 
-	const shouldCache = page === 1 && !q;
-	const key = `dashboard:${user.id}:page:${page}:limit:${limit}`;
+	const ALLOWED_SORTS: Record<string, Prisma.ProjectOrderByWithRelationInput[]> = {
+		createdAt: [{ createdAt: order }, { id: 'asc' }],
+		name: [{ name: order }, { id: 'asc' }],
+		status: [{ status: order }, { id: 'asc' }],
+		tasks: [{ tasks: { _count: order } }, { id: 'asc' }]
+	};
+	const orderBy = ALLOWED_SORTS[sortBy] ?? ALLOWED_SORTS.createdAt;
+
+	const shouldCache = page === 1 && !q && sortBy === 'createdAt' && order === 'desc';
+	const key = `dashboard:${user.id}:page:${page}:limit:${limit}:sort:${sortBy}:order:${order}`;
 
 	function searchFilter(input: Prisma.ProjectWhereInput) {
 		if (!q) return input;
@@ -42,7 +52,7 @@ export async function GET(event: RequestEvent) {
 			prisma.project.findMany({
 				where: myWhere,
 				include: { _count: { select: { tasks: { where: { status: { not: 'DONE' } } } } } },
-				orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+				orderBy,
 				skip,
 				take: limit
 			}),
@@ -50,7 +60,7 @@ export async function GET(event: RequestEvent) {
 			prisma.project.findMany({
 				where: sharedWhere,
 				include: { _count: { select: { tasks: { where: { status: { not: 'DONE' } } } } } },
-				orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+				orderBy,
 				skip,
 				take: limit
 			}),
