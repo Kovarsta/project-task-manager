@@ -4,7 +4,7 @@ import { getValidInvite } from '$lib/server/invite';
 import type { HttpError } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async (event) => {
-	const session = await event.locals.auth();
+	const session = event.locals.session;
 
 	if (!session) {
 		throw redirect(307, `/login?redirectTo=/invite/${event.params.token}`);
