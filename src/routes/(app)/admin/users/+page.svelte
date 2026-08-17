@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { Search, Shield, UserX, UserCheck, ArrowUp, ArrowDown } from '@lucide/svelte';
+	import { Search, Shield, UserX, UserCheck, ArrowUp, ArrowDown, Filter } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import Pagination from '$lib/components/ui/Pagination.svelte';
@@ -15,6 +16,7 @@
 			q: string;
 			sort: string;
 			order: string;
+			role: '' | 'super' | 'user';
 		};
 	}>();
 
@@ -25,6 +27,43 @@
 
 	let sortField = $state(data.sort);
 	let sortDir = $state(data.order as 'asc' | 'desc');
+
+	let roleFilter = $state<'all' | 'super' | 'user'>(data.role || 'all');
+
+	let pageSortField = $state<'name' | 'role' | 'status' | 'created'>('name');
+	let pageSortDir = $state<'asc' | 'desc'>('asc');
+
+	const sortedUsers = $derived.by(() => {
+		const result = [...data.users];
+		result.sort((a, b) => {
+			let aVal: string;
+			let bVal: string;
+			if (pageSortField === 'role') {
+				aVal = a.isSuperAdmin ? '1' : '0';
+				bVal = b.isSuperAdmin ? '1' : '0';
+			} else if (pageSortField === 'status') {
+				aVal = a.deactivatedAt ? '1' : '0';
+				bVal = b.deactivatedAt ? '1' : '0';
+			} else if (pageSortField === 'created') {
+				aVal = new Date(a.createdAt).getTime().toString();
+				bVal = new Date(b.createdAt).getTime().toString();
+			} else {
+				aVal = String((a as Record<string, unknown>)[pageSortField] ?? '');
+				bVal = String((b as Record<string, unknown>)[pageSortField] ?? '');
+			}
+			return pageSortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+		});
+		return result;
+	});
+
+	function togglePageSort(field: 'name' | 'role' | 'status' | 'created') {
+		if (pageSortField === field) {
+			pageSortDir = pageSortDir === 'asc' ? 'desc' : 'asc';
+		} else {
+			pageSortField = field;
+			pageSortDir = 'asc';
+		}
+	}
 
 	let confirmAction: {
 		type: 'superAdmin' | 'deactivate' | 'reactivate';
@@ -40,12 +79,19 @@
 		limit = data.meta.limit;
 		sortField = data.sort;
 		sortDir = data.order as 'asc' | 'desc';
+		roleFilter = data.role || 'all';
 	});
 
 	function handleSortClick(field: string) {
 		const newDir = sortField === field && sortDir === 'asc' ? 'desc' : 'asc';
-		const params = new URLSearchParams({ page: String(currentPage), limit: String(limit), sort: field, order: newDir });
+		const params = new URLSearchParams({
+			page: String(currentPage),
+			limit: String(limit),
+			sort: field,
+			order: newDir
+		});
 		if (search) params.set('q', search);
+		if (roleFilter !== 'all') params.set('role', roleFilter);
 		goto(`?${params}`, { keepFocus: true, replaceState: true });
 	}
 
@@ -54,8 +100,14 @@
 		clearTimeout(debounceTimer);
 		debounceTimer = setTimeout(() => {
 			currentPage = 1;
-			const params = new URLSearchParams({ page: '1', limit: String(limit), sort: sortField, order: sortDir });
+			const params = new URLSearchParams({
+				page: '1',
+				limit: String(limit),
+				sort: sortField,
+				order: sortDir
+			});
 			if (value) params.set('q', value);
+			if (roleFilter !== 'all') params.set('role', roleFilter);
 			goto(`?${params}`, { keepFocus: true, replaceState: true });
 		}, 300);
 	}
@@ -63,13 +115,25 @@
 	function clearSearch() {
 		search = '';
 		currentPage = 1;
-		const params = new URLSearchParams({ page: '1', limit: String(limit), sort: sortField, order: sortDir });
+		const params = new URLSearchParams({
+			page: '1',
+			limit: String(limit),
+			sort: sortField,
+			order: sortDir
+		});
+		if (roleFilter !== 'all') params.set('role', roleFilter);
 		goto(`?${params}`, { keepFocus: true });
 	}
 
 	function reload() {
-		const params = new URLSearchParams({ page: String(currentPage), limit: String(limit), sort: sortField, order: sortDir });
+		const params = new URLSearchParams({
+			page: String(currentPage),
+			limit: String(limit),
+			sort: sortField,
+			order: sortDir
+		});
 		if (search) params.set('q', search);
+		if (roleFilter !== 'all') params.set('role', roleFilter);
 		goto(`?${params}`, { keepFocus: true });
 	}
 
@@ -139,83 +203,143 @@
 		<div class="mb-4 space-y-3">
 			<div class="relative">
 				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-				<input
+				<Input
 					type="text"
-					placeholder="Search users..."
+					placeholder="Search by name, email, status, or role..."
 					value={search}
 					oninput={(e) => onSearchInput(e.currentTarget.value)}
-					class="w-full rounded-lg border border-input bg-background py-2 pr-4 pl-10 text-sm placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none"
+					class="pl-9"
 				/>
 			</div>
-			<div class="flex items-center justify-between">
-				<div class="flex items-center gap-1">
-					<span class="mr-1 text-xs text-muted-foreground">Sort by:</span>
-					{#each [['name', 'Name'], ['role', 'Role'], ['status', 'Status'], ['created', 'Created']] as [field, label] (field)}
-						<Button
-							variant={sortField === field ? 'secondary' : 'ghost'}
-							size="sm"
-							class="h-8 gap-1 text-xs"
-							onclick={() => handleSortClick(field)}
-						>
-							{label}
-							{#if sortField === field}
-								{#if sortDir === 'asc'}
-									<ArrowUp class="h-3.5 w-3.5" />
-								{:else}
-									<ArrowDown class="h-3.5 w-3.5" />
-								{/if}
+			<div class="flex flex-wrap items-stretch gap-1">
+				{#each [['name', 'Name'], ['role', 'Role'], ['status', 'Status'], ['created', 'Created']] as [field, label] (field)}
+					<Button
+						variant={sortField === field ? 'secondary' : 'ghost'}
+						size="sm"
+						class="flex-auto text-xs"
+						onclick={() => handleSortClick(field)}
+					>
+						<Filter class="h-3.5 w-3.5" />
+						{label}
+						{#if sortField === field}
+							{#if sortDir === 'asc'}
+								<ArrowUp class="h-3.5 w-3.5" />
+							{:else}
+								<ArrowDown class="h-3.5 w-3.5" />
 							{/if}
-						</Button>
-					{/each}
-				</div>
-				{#if data.q}
-					<Button variant="ghost" size="sm" onclick={clearSearch}>Clear</Button>
-				{/if}
+						{/if}
+					</Button>
+				{/each}
 			</div>
+			{#if data.q}
+				<Button variant="ghost" size="sm" onclick={clearSearch}>Clear</Button>
+			{/if}
 		</div>
 
 		<div class="overflow-hidden rounded-xl border">
 			<table class="w-full text-sm">
 				<thead class="bg-muted/50">
 					<tr>
-						<th class="px-4 py-3 text-left font-medium">User</th>
-						<th class="w-44 px-4 py-3 text-left font-medium">Actions</th>
+						<th
+							class="cursor-pointer px-4 py-2 text-left font-medium select-none"
+							onclick={() => togglePageSort('name')}
+						>
+							<span class="inline-flex items-center gap-1">
+								User
+								{#if pageSortField === 'name'}
+									{#if pageSortDir === 'asc'}
+										<ArrowUp class="h-3 w-3" />
+									{:else}
+										<ArrowDown class="h-3 w-3" />
+									{/if}
+								{/if}
+							</span>
+						</th>
+						<th
+							class="cursor-pointer px-4 py-2 text-left font-medium select-none"
+							onclick={() => togglePageSort('role')}
+						>
+							<span class="inline-flex items-center gap-1">
+								Role
+								{#if pageSortField === 'role'}
+									{#if pageSortDir === 'asc'}
+										<ArrowUp class="h-3 w-3" />
+									{:else}
+										<ArrowDown class="h-3 w-3" />
+									{/if}
+								{/if}
+							</span>
+						</th>
+						<th
+							class="cursor-pointer px-4 py-2 text-left font-medium select-none"
+							onclick={() => togglePageSort('status')}
+						>
+							<span class="inline-flex items-center gap-1">
+								Status
+								{#if pageSortField === 'status'}
+									{#if pageSortDir === 'asc'}
+										<ArrowUp class="h-3 w-3" />
+									{:else}
+										<ArrowDown class="h-3 w-3" />
+									{/if}
+								{/if}
+							</span>
+						</th>
+						<th
+							class="cursor-pointer px-4 py-2 text-left font-medium select-none"
+							onclick={() => togglePageSort('created')}
+						>
+							<span class="inline-flex items-center gap-1">
+								Joined
+								{#if pageSortField === 'created'}
+									{#if pageSortDir === 'asc'}
+										<ArrowUp class="h-3 w-3" />
+									{:else}
+										<ArrowDown class="h-3 w-3" />
+									{/if}
+								{/if}
+							</span>
+						</th>
+						<th class="w-44 px-4 py-2 text-left font-medium">Actions</th>
 					</tr>
 				</thead>
 				<tbody>
-					{#each data.users as user (user.id)}
+					{#each sortedUsers as user (user.id)}
 						<tr
 							class="border-t transition-colors hover:bg-muted/20 {user.deactivatedAt
 								? 'opacity-50'
 								: ''}"
 						>
-							<td class="px-4 py-3">
-								<div class="flex items-center gap-2">
-									<span class="font-medium">{user.name}</span>
-									{#if user.isSuperAdmin}
-										<Badge
-											variant="default"
-											class="h-5 gap-1 bg-amber-500 px-1.5 py-0 text-xs text-white"
-										>
-											<Shield class="h-3 w-3" />
-											Super Admin
-										</Badge>
-									{/if}
-								</div>
+							<td class="px-4 py-2">
+								<div class="font-medium">{user.name}</div>
 								<div class="text-xs text-muted-foreground">{user.email}</div>
-								<div class="mt-1.5 space-y-0.5 text-xs">
-									{#if user.deactivatedAt}
-										<span class="text-red-600 dark:text-red-400">Deactivated</span>
-									{:else}
-										<span class="text-muted-foreground">Active</span>
-									{/if}
-									<span class="text-muted-foreground">
-										&middot; {user._count.createdProjects} projects &middot; {user._count
-											.memberships} memberships &middot; Joined {shortDate(user.createdAt)}
-									</span>
+								<div class="mt-1 text-xs text-muted-foreground">
+									{user._count.createdProjects} projects &middot; {user._count.memberships}{' '}
+									memberships
 								</div>
 							</td>
-							<td class="px-4 py-3">
+							<td class="px-4 py-2">
+								{#if user.isSuperAdmin}
+									<Badge
+										variant="default"
+										class="h-5 gap-1 bg-amber-500 px-1.5 py-0 text-xs text-white"
+									>
+										<Shield class="h-3 w-3" />
+										Super Admin
+									</Badge>
+								{:else}
+									<span class="text-muted-foreground">User</span>
+								{/if}
+							</td>
+							<td class="px-4 py-2">
+								{#if user.deactivatedAt}
+									<span class="text-red-600 dark:text-red-400">Deactivated</span>
+								{:else}
+									<span class="text-green-600 dark:text-green-400">Active</span>
+								{/if}
+							</td>
+							<td class="px-4 py-2 text-muted-foreground">{shortDate(user.createdAt)}</td>
+							<td class="px-4 py-2">
 								<div class="flex flex-col items-start gap-1.5">
 									<Button
 										variant="outline"
@@ -257,7 +381,11 @@
 
 		{#if data.users.length === 0}
 			<p class="mt-6 text-center text-sm text-muted-foreground">
-				{data.q ? `No users matching "${data.q}"` : 'No users found'}
+				{data.q
+					? `No users matching "${data.q}"`
+					: roleFilter !== 'all'
+						? 'No users match the selected filter'
+						: 'No users found'}
 			</p>
 		{/if}
 	</div>
