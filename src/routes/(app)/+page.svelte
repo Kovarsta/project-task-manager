@@ -75,7 +75,12 @@
 		clearTimeout(debounceTimer);
 		debounceTimer = setTimeout(() => {
 			currentPage = 1;
-			const params = new URLSearchParams({ page: '1', limit: String(limit) });
+			const params = new URLSearchParams({
+				page: '1',
+				limit: String(limit),
+				sort: sortField,
+				order: sortDir
+			});
 			if (value) params.set('q', value);
 			const tab = page.url.searchParams.get('tab');
 			if (tab) params.set('tab', tab);
@@ -90,58 +95,51 @@
 
 	const descChars = $derived(stripHtml(newDescription).length);
 
-	const STATUS_ORDER: Record<string, number> = {
-		ACTIVE: 0,
-		ON_HOLD: 1,
-		CANCELED: 2,
-		COMPLETE: 3
-	};
-
-	let sortField = $state<'createdAt' | 'name' | 'tasks' | 'attention' | 'status'>('createdAt');
-	let sortDir = $state<'asc' | 'desc'>('desc');
-
-	function handleSortClick(field: typeof sortField) {
-		if (sortField === field) {
-			sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-		} else {
-			sortField = field;
-			sortDir = field === 'name' ? 'asc' : 'desc';
-		}
-	}
-
 	const activeTab = $derived(page.url.searchParams.get('tab') === 'shared' ? 'shared' : 'my');
 
-	function sortProjects(projects: Project[]) {
-		return [...projects].sort((a, b) => {
-			let cmp = 0;
-			if (sortField === 'name') {
-				cmp = a.name.localeCompare(b.name);
-			} else if (sortField === 'tasks') {
-				cmp = a._count.tasks - b._count.tasks;
-			} else if (sortField === 'attention') {
-				const aCount = a._myTaskCount ?? 0;
-				const bCount = b._myTaskCount ?? 0;
-				if (aCount !== bCount) {
-					cmp = aCount - bCount;
-				} else {
-					const aDue = a._earliestDue ? new Date(a._earliestDue).getTime() : Infinity;
-					const bDue = b._earliestDue ? new Date(b._earliestDue).getTime() : Infinity;
-					cmp = bDue - aDue;
-				}
-			} else if (sortField === 'status') {
-				cmp = (STATUS_ORDER[a.status ?? 'ACTIVE'] ?? 0) - (STATUS_ORDER[b.status ?? 'ACTIVE'] ?? 0);
-			} else {
-				cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-			}
-			return sortDir === 'asc' ? cmp : -cmp;
+	const DEFAULT_DIR: Record<string, 'asc' | 'desc'> = {
+		createdAt: 'desc',
+		name: 'asc',
+		status: 'asc',
+		tasks: 'desc'
+	};
+
+	let sortField = $state<'createdAt' | 'name' | 'status' | 'tasks'>(
+		(data.sort as 'createdAt' | 'name' | 'status' | 'tasks') ?? 'createdAt'
+	);
+	let sortDir = $state<'asc' | 'desc'>(data.order === 'asc' ? 'asc' : 'desc');
+
+	$effect(() => {
+		sortField = (data.sort as 'createdAt' | 'name' | 'status' | 'tasks') ?? 'createdAt';
+		sortDir = data.order === 'asc' ? 'asc' : 'desc';
+	});
+
+	function handleSortClick(field: string) {
+		const newDir =
+			sortField === field ? (sortDir === 'asc' ? 'desc' : 'asc') : (DEFAULT_DIR[field] ?? 'asc');
+		sortField = field as typeof sortField;
+		sortDir = newDir;
+		currentPage = 1;
+		const params = new URLSearchParams({
+			page: '1',
+			limit: String(limit),
+			sort: field,
+			order: newDir
 		});
+		const q = page.url.searchParams.get('q');
+		const tab = page.url.searchParams.get('tab');
+		if (q) params.set('q', q);
+		if (tab) params.set('tab', tab);
+		goto(`?${params}`, { keepFocus: true, replaceState: true });
 	}
 
-	let filteredMy = $derived.by(() => sortProjects(myProjects));
-	let filteredShared = $derived.by(() => sortProjects(sharedProjects));
-
 	function reload() {
-		const params = new URLSearchParams({ page: String(currentPage), limit: String(limit) });
+		const params = new URLSearchParams({
+			page: String(currentPage),
+			limit: String(limit),
+			sort: sortField,
+			order: sortDir
+		});
 		const q = page.url.searchParams.get('q');
 		const tab = page.url.searchParams.get('tab');
 		if (q) params.set('q', q);
@@ -214,12 +212,12 @@
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-1">
 					<span class="mr-1 text-xs text-muted-foreground">Sort by:</span>
-					{#each [['createdAt', 'Date'], ['name', 'Name'], ['status', 'Status'], ['tasks', 'Tasks'], ['attention', 'Attention']] as [field, label] (field)}
+					{#each [['createdAt', 'Date'], ['name', 'Name'], ['status', 'Status'], ['tasks', 'Tasks']] as [field, label] (field)}
 						<Button
 							variant={sortField === field ? 'secondary' : 'ghost'}
 							size="sm"
 							class="h-8 gap-1 text-xs"
-							onclick={() => handleSortClick(field as any)}
+							onclick={() => handleSortClick(field)}
 						>
 							{label}
 							{#if sortField === field}
@@ -245,11 +243,11 @@
 		{#if activeTab === 'my'}
 			<section>
 				<h2 class="mb-3 text-sm font-semibold">My Projects</h2>
-				{#if filteredMy.length === 0}
+				{#if myProjects.length === 0}
 					<p class="text-sm text-muted-foreground">No projects found</p>
 				{:else}
 					<div class="flex flex-col gap-2">
-						{#each filteredMy as project (project.id)}
+						{#each myProjects as project (project.id)}
 							<ProjectCard {project} />
 						{/each}
 					</div>
@@ -258,11 +256,11 @@
 		{:else}
 			<section>
 				<h2 class="mb-3 text-sm font-semibold">Shared Projects</h2>
-				{#if filteredShared.length === 0}
+				{#if sharedProjects.length === 0}
 					<p class="text-sm text-muted-foreground">No shared projects</p>
 				{:else}
 					<div class="flex flex-col gap-2">
-						{#each filteredShared as project (project.id)}
+						{#each sharedProjects as project (project.id)}
 							<ProjectCard {project} />
 						{/each}
 					</div>
