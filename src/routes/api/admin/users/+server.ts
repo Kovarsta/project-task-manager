@@ -9,6 +9,7 @@ export async function GET(event: RequestEvent) {
 
 	const { searchParams } = event.url;
 	const q = searchParams.get('q')?.trim();
+	const role = searchParams.get('role');
 	const page = Math.max(1, Number(searchParams.get('page') ?? 1));
 	const limit = Math.min(50, Math.max(1, Number(searchParams.get('limit') ?? 20)));
 	const sortBy = searchParams.get('sort') ?? 'name';
@@ -28,9 +29,25 @@ export async function GET(event: RequestEvent) {
 		...(q && {
 			OR: [
 				{ name: { contains: q, mode: 'insensitive' as const } },
-				{ email: { contains: q, mode: 'insensitive' as const } }
+				{ email: { contains: q, mode: 'insensitive' as const } },
+				// status keywords: "active" / "deactivated"
+				...(q.match(/^(active|enabled|online)$/i)
+					? [{ deactivatedAt: null as null }]
+					: []),
+				...(q.match(/^(deact(ivated)?|disabled|inactive|banned|suspended)$/i)
+					? [{ deactivatedAt: { not: null as null } }]
+					: []),
+				// role keywords: "super admin" / "regular"
+				...(q.match(/^(super ?admin|admin|super)$/i)
+					? [{ isSuperAdmin: true as boolean }]
+					: []),
+				...(q.match(/^(regular|user|member|normal)$/i)
+					? [{ isSuperAdmin: false as boolean }]
+					: [])
 			]
-		})
+		}),
+		...(role === 'super' && { isSuperAdmin: true }),
+		...(role === 'user' && { isSuperAdmin: false })
 	};
 
 	const [users, total] = await Promise.all([

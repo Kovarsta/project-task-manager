@@ -1,8 +1,18 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { Search, ListTodo, Users, Calendar, ArrowUp, ArrowDown, Ban, CheckCircle } from '@lucide/svelte';
+	import {
+		Search,
+		ListTodo,
+		Users,
+		ArrowUp,
+		ArrowDown,
+		Filter,
+		Ban,
+		CheckCircle
+	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import Pagination from '$lib/components/ui/Pagination.svelte';
 	import type { AdminProject } from '$lib/type';
@@ -20,18 +30,58 @@
 	let search = $state('');
 	let currentPage = $state(1);
 	let limit = $state(10);
-	let confirmAction: { project: AdminProject; action: 'deactivate' | 'reactivate' } | null = $state(null);
+	let confirmAction: { project: AdminProject; action: 'deactivate' | 'reactivate' } | null =
+		$state(null);
 	let showConfirm = $state(false);
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 	let sortField = $state(data.sort);
 	let sortDir = $state(data.order as 'asc' | 'desc');
 
+	let pageSortField = $state<'name' | 'status' | 'owner' | 'created'>('name');
+	let pageSortDir = $state<'asc' | 'desc'>('asc');
+
+	const sortedProjects = $derived.by(() => {
+		const result = [...data.projects];
+		result.sort((a, b) => {
+			let aVal: string;
+			let bVal: string;
+			if (pageSortField === 'owner') {
+				aVal = a.createdBy.name;
+				bVal = b.createdBy.name;
+			} else if (pageSortField === 'created') {
+				aVal = new Date(a.createdAt).getTime().toString();
+				bVal = new Date(b.createdAt).getTime().toString();
+			} else if (pageSortField === 'status') {
+				aVal = a.deactivatedAt ? '1' : '0';
+				bVal = b.deactivatedAt ? '1' : '0';
+			} else {
+				aVal = String((a as Record<string, unknown>)[pageSortField] ?? '');
+				bVal = String((b as Record<string, unknown>)[pageSortField] ?? '');
+			}
+			return pageSortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+		});
+		return result;
+	});
+
+	function togglePageSort(field: 'name' | 'status' | 'owner' | 'created') {
+		if (pageSortField === field) {
+			pageSortDir = pageSortDir === 'asc' ? 'desc' : 'asc';
+		} else {
+			pageSortField = field;
+			pageSortDir = 'asc';
+		}
+	}
+
 	function statusLabel(s: string) {
 		switch (s) {
-			case 'ON_HOLD': return 'Hold';
-			case 'COMPLETE': return 'Done';
-			case 'CANCELED': return 'Canceled';
-			default: return s;
+			case 'ON_HOLD':
+				return 'Hold';
+			case 'COMPLETE':
+				return 'Done';
+			case 'CANCELED':
+				return 'Canceled';
+			default:
+				return s;
 		}
 	}
 
@@ -52,7 +102,12 @@
 
 	function handleSortClick(field: string) {
 		const newDir = sortField === field && sortDir === 'asc' ? 'desc' : 'asc';
-		const params = new URLSearchParams({ page: String(currentPage), limit: String(limit), sort: field, order: newDir });
+		const params = new URLSearchParams({
+			page: String(currentPage),
+			limit: String(limit),
+			sort: field,
+			order: newDir
+		});
 		if (search) params.set('q', search);
 		goto(`?${params}`, { keepFocus: true, replaceState: true });
 	}
@@ -70,7 +125,12 @@
 		clearTimeout(debounceTimer);
 		debounceTimer = setTimeout(() => {
 			currentPage = 1;
-			const params = new URLSearchParams({ page: '1', limit: String(limit), sort: sortField, order: sortDir });
+			const params = new URLSearchParams({
+				page: '1',
+				limit: String(limit),
+				sort: sortField,
+				order: sortDir
+			});
 			if (value) params.set('q', value);
 			goto(`?${params}`, { keepFocus: true, replaceState: true });
 		}, 300);
@@ -79,12 +139,22 @@
 	function clearSearch() {
 		search = '';
 		currentPage = 1;
-		const params = new URLSearchParams({ page: '1', limit: String(limit), sort: sortField, order: sortDir });
+		const params = new URLSearchParams({
+			page: '1',
+			limit: String(limit),
+			sort: sortField,
+			order: sortDir
+		});
 		goto(`?${params}`, { keepFocus: true });
 	}
 
 	function reload() {
-		const params = new URLSearchParams({ page: String(currentPage), limit: String(limit), sort: sortField, order: sortDir });
+		const params = new URLSearchParams({
+			page: String(currentPage),
+			limit: String(limit),
+			sort: sortField,
+			order: sortDir
+		});
 		if (search) params.set('q', search);
 		goto(`?${params}`, { keepFocus: true });
 	}
@@ -123,55 +193,114 @@
 		<div class="mb-4 space-y-3">
 			<div class="relative">
 				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-				<input
+				<Input
 					type="text"
-					placeholder="Search by name, owner, description, tags, or date..."
+					placeholder="Search by name, owner, status, description, tags, or date..."
 					value={search}
 					oninput={(e) => onSearchInput(e.currentTarget.value)}
-					class="w-full rounded-lg border border-input bg-background py-2 pr-4 pl-10 text-sm placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none"
+					class="pl-9"
 				/>
 			</div>
-			<div class="flex items-center justify-between">
-				<div class="flex items-center gap-1">
-					<span class="mr-1 text-xs text-muted-foreground">Sort by:</span>
-					{#each [['name', 'Name'], ['created', 'Created']] as [field, label] (field)}
-						<Button
-							variant={sortField === field ? 'secondary' : 'ghost'}
-							size="sm"
-							class="h-8 gap-1 text-xs"
-							onclick={() => handleSortClick(field)}
-						>
-							{label}
-							{#if sortField === field}
-								{#if sortDir === 'asc'}
-									<ArrowUp class="h-3.5 w-3.5" />
-								{:else}
-									<ArrowDown class="h-3.5 w-3.5" />
-								{/if}
+			<div class="flex flex-wrap items-stretch gap-1">
+				{#each [['name', 'Name'], ['owner', 'Owner'], ['created', 'Created']] as [field, label] (field)}
+					<Button
+						variant={sortField === field ? 'secondary' : 'ghost'}
+						size="sm"
+						class="flex-auto text-xs"
+						onclick={() => handleSortClick(field)}
+					>
+						<Filter class="h-3.5 w-3.5" />
+						{label}
+						{#if sortField === field}
+							{#if sortDir === 'asc'}
+								<ArrowUp class="h-3.5 w-3.5" />
+							{:else}
+								<ArrowDown class="h-3.5 w-3.5" />
 							{/if}
-						</Button>
-					{/each}
-				</div>
-				{#if data.q}
-					<Button variant="ghost" size="sm" onclick={clearSearch}>Clear</Button>
-				{/if}
+						{/if}
+					</Button>
+				{/each}
 			</div>
+			{#if data.q}
+				<Button variant="ghost" size="sm" onclick={clearSearch}>Clear</Button>
+			{/if}
 		</div>
 
 		<div class="overflow-hidden rounded-xl border">
 			<table class="w-full text-sm">
 				<thead class="bg-muted/50">
 					<tr>
-						<th class="px-4 py-3 text-left font-medium">Project</th>
-						<th class="px-4 py-3 text-left font-medium">Status</th>
-						<th class="px-4 py-3 text-left font-medium">Owner</th>
-						<th class="w-16 px-4 py-3 text-left font-medium">Actions</th>
+						<th
+							class="cursor-pointer px-4 py-2 text-left font-medium select-none"
+							onclick={() => togglePageSort('name')}
+						>
+							<span class="inline-flex items-center gap-1">
+								Project
+								{#if pageSortField === 'name'}
+									{#if pageSortDir === 'asc'}
+										<ArrowUp class="h-3 w-3" />
+									{:else}
+										<ArrowDown class="h-3 w-3" />
+									{/if}
+								{/if}
+							</span>
+						</th>
+						<th
+							class="cursor-pointer px-4 py-2 text-left font-medium select-none"
+							onclick={() => togglePageSort('status')}
+						>
+							<span class="inline-flex items-center gap-1">
+								Status
+								{#if pageSortField === 'status'}
+									{#if pageSortDir === 'asc'}
+										<ArrowUp class="h-3 w-3" />
+									{:else}
+										<ArrowDown class="h-3 w-3" />
+									{/if}
+								{/if}
+							</span>
+						</th>
+						<th
+							class="cursor-pointer px-4 py-2 text-left font-medium select-none"
+							onclick={() => togglePageSort('owner')}
+						>
+							<span class="inline-flex items-center gap-1">
+								Owner
+								{#if pageSortField === 'owner'}
+									{#if pageSortDir === 'asc'}
+										<ArrowUp class="h-3 w-3" />
+									{:else}
+										<ArrowDown class="h-3 w-3" />
+									{/if}
+								{/if}
+							</span>
+						</th>
+						<th
+							class="cursor-pointer px-4 py-2 text-left font-medium select-none"
+							onclick={() => togglePageSort('created')}
+						>
+							<span class="inline-flex items-center gap-1">
+								Created
+								{#if pageSortField === 'created'}
+									{#if pageSortDir === 'asc'}
+										<ArrowUp class="h-3 w-3" />
+									{:else}
+										<ArrowDown class="h-3 w-3" />
+									{/if}
+								{/if}
+							</span>
+						</th>
+						<th class="w-16 px-4 py-2 text-left font-medium">Actions</th>
 					</tr>
 				</thead>
 				<tbody>
-					{#each data.projects as project (project.id)}
-						<tr class="border-t transition-colors hover:bg-muted/20 {project.deactivatedAt ? 'opacity-50' : ''}">
-							<td class="px-4 py-3">
+					{#each sortedProjects as project (project.id)}
+						<tr
+							class="border-t transition-colors hover:bg-muted/20 {project.deactivatedAt
+								? 'opacity-50'
+								: ''}"
+						>
+							<td class="px-4 py-2">
 								<div class="flex items-center gap-2">
 									<span class="font-medium">{project.name}</span>
 									<span class="text-xs text-muted-foreground">
@@ -187,13 +316,11 @@
 										<Users class="h-3 w-3" />
 										{project._count.members} members
 									</span>
-									<span class="flex items-center gap-1">
-										<Calendar class="h-3 w-3" />
-										{shortDate(project.createdAt)}
-									</span>
 								</div>
 								{#if project.description}
-									<div class="mt-1 line-clamp-2 text-xs text-muted-foreground/70 [&_a]:text-blue-500 [&_a]:underline">
+									<div
+										class="mt-1 line-clamp-2 text-xs text-muted-foreground/70 [&_a]:text-blue-500 [&_a]:underline"
+									>
 										{@html project.description}
 									</div>
 								{/if}
@@ -208,16 +335,21 @@
 									</div>
 								{/if}
 							</td>
-							<td class="px-4 py-3">
-								<span class="text-xs font-semibold {project.deactivatedAt ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
+							<td class="px-4 py-2">
+								<span
+									class="text-xs font-semibold {project.deactivatedAt
+										? 'text-red-600 dark:text-red-400'
+										: 'text-green-600 dark:text-green-400'}"
+								>
 									{project.deactivatedAt ? 'Deactivated' : 'Active'}
 								</span>
 							</td>
-							<td class="px-4 py-3">
+							<td class="px-4 py-2">
 								<div>{project.createdBy.name}</div>
 								<div class="text-xs text-muted-foreground">{project.createdBy.email}</div>
 							</td>
-							<td class="px-4 py-3">
+							<td class="px-4 py-2 text-muted-foreground">{shortDate(project.createdAt)}</td>
+							<td class="px-4 py-2">
 								{#if project.deactivatedAt}
 									<button
 										onclick={() => askAction(project, 'reactivate')}
@@ -278,7 +410,9 @@
 						<div>
 							<div class="text-xs text-muted-foreground">Owner</div>
 							<div class="font-medium">{confirmAction.project.createdBy.name}</div>
-							<div class="text-xs text-muted-foreground">{confirmAction.project.createdBy.email}</div>
+							<div class="text-xs text-muted-foreground">
+								{confirmAction.project.createdBy.email}
+							</div>
 						</div>
 						<div>
 							<div class="text-xs text-muted-foreground">Status</div>
@@ -308,7 +442,9 @@
 					Cancel
 				</Button>
 				<Button
-					class="flex-1 {confirmAction.action === 'deactivate' ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-green-600 text-white hover:bg-green-700'}"
+					class="flex-1 {confirmAction.action === 'deactivate'
+						? 'bg-red-600 text-white hover:bg-red-700'
+						: 'bg-green-600 text-white hover:bg-green-700'}"
 					onclick={performAction}
 				>
 					{confirmAction.action === 'deactivate' ? 'Deactivate' : 'Reactivate'}

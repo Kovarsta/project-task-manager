@@ -18,6 +18,7 @@ export async function GET(event: RequestEvent) {
 
 	const ALLOWED_SORTS: Record<string, any> = {
 		name: [{ name: order }, { id: 'asc' }],
+		owner: [{ createdBy: { name: order } }, { id: 'asc' }],
 		created: [{ createdAt: order }, { id: 'asc' }]
 	};
 

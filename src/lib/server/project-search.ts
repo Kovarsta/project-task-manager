@@ -50,6 +50,21 @@ export function projectSearchFilter(q: string): Prisma.ProjectWhereInput {
 		{ createdBy: { email: { contains: q, mode: 'insensitive' } } }
 	];
 
+	// status keywords (project lifecycle + active/deactivated state)
+	const statusKeywords: [RegExp, Prisma.ProjectWhereInput][] = [
+		[/^(active|running|ongoing|in.?progress)$/i, { status: 'ACTIVE' }],
+		[/^(on.?hold|hold|paused|waiting)$/i, { status: 'ON_HOLD' }],
+		[/^(canceled|cancelled|closed|archived)$/i, { status: 'CANCELED' }],
+		[/^(done|complete|completed|finished|resolved)$/i, { status: 'COMPLETE' }]
+	];
+	for (const [re, filter] of statusKeywords) {
+		if (re.test(q)) conditions.push(filter);
+	}
+	if (/^(active|enabled)$/i.test(q)) conditions.push({ deactivatedAt: null });
+	if (/^(deact(ivated)?|disabled|inactive|banned|suspended)$/i.test(q)) {
+		conditions.push({ deactivatedAt: { not: null } });
+	}
+
 	const deadlineRange = parseDateQuery(q);
 	if (deadlineRange) {
 		conditions.push({ deadline: deadlineRange });
