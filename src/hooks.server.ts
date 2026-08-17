@@ -1,7 +1,7 @@
 import { handle as authHandle } from './auth';
 import { sequence } from '@sveltejs/kit/hooks';
 import type { Handle } from '@sveltejs/kit';
-import { error, isHttpError } from '@sveltejs/kit';
+import { error, isHttpError, json } from '@sveltejs/kit';
 import { gzip, brotliCompress, constants as zlibConstants } from 'node:zlib';
 import { promisify } from 'node:util';
 import { createHash } from 'node:crypto';
@@ -76,6 +76,17 @@ const rateLimiter: Handle = async ({ event, resolve }) => {
 	const key = hashKey(buildRateLimitKey(event));
 	const redis = await getRedis();
 
+	// SPA data fetches and API routes must get a JSON 429 — the SvelteKit client
+	// parses `__data.json` bodies as NDJSON, and `serverFetch` parses `/api/*`
+	// responses as JSON. An HTML error page there surfaces as a confusing 500.
+	const tooManyRequests = (): Response => {
+		const isJson = event.isDataRequest || event.url.pathname.startsWith('/api');
+		if (isJson) {
+			return json({ message: 'Too many requests — slow down' }, { status: 429 });
+		}
+		throw error(429, 'Too many requests — slow down');
+	};
+
 	const applyInMemory = (): ReturnType<Handle> => {
 		const now = Date.now();
 		const entry = fallbackMap.get(key);
@@ -90,7 +101,7 @@ const rateLimiter: Handle = async ({ event, resolve }) => {
 			return resolve(event);
 		}
 		entry.count++;
-		if (entry.count > MAX_REQUESTS) throw error(429, 'Too many requests — slow down');
+		if (entry.count > MAX_REQUESTS) return tooManyRequests();
 		return resolve(event);
 	};
 
@@ -99,7 +110,7 @@ const rateLimiter: Handle = async ({ event, resolve }) => {
 			const redisKey = `ratelimit:${key}`;
 			const count = await redis.incr(redisKey);
 			if (count === 1) await redis.expire(redisKey, WINDOW_SECONDS);
-			if (count > MAX_REQUESTS) throw error(429, 'Too many requests — slow down');
+			if (count > MAX_REQUESTS) return tooManyRequests();
 		} catch (e) {
 			// Redis blip mid-request: fall back to the in-memory limiter so the
 			// site never 500s on a rate-limit infrastructure failure.
@@ -117,6 +128,7 @@ const publicRoutes = ['/login', '/logout', '/auth', '/invite'];
 
 const authGuard: Handle = async ({ event, resolve }) => {
 	const session = await event.locals.auth();
+	event.locals.session = session;
 
 	const isPublic = publicRoutes.some((r) => event.url.pathname.startsWith(r));
 
@@ -194,6 +206,12 @@ const pageCache: Handle = async ({ event, resolve }) => {
 	if (event.request.method !== 'GET') return resolve(event);
 	if (event.url.pathname.startsWith('/api')) return resolve(event);
 	if (event.url.pathname.startsWith('/_app/')) return resolve(event);
+	// Data requests (`*.sveltekit.io` / `__data.json`) are JSON — never HTML.
+	// SvelteKit strips the data suffix from `event.url` BEFORE hooks run, so the
+	// pathname alone can't distinguish a data request from its full page. Serving
+	// a cached full-page document for a data request crashes the client's NDJSON
+	// parser. `event.isDataRequest` is the reliable signal.
+	if (event.isDataRequest) return resolve(event);
 
 	const userId = event.locals.userId;
 	if (!userId) return resolve(event);
