@@ -4,6 +4,10 @@
 # Uses host networking so the existing Caddyfile (reverse_proxy 127.0.0.1:8080)
 # and rathole-server.toml (bind 0.0.0.0:2333 / 0.0.0.0:8080) work unchanged.
 # Inbound rules required: 443/tcp (Caddy), 2333/tcp (rathole control channel).
+#
+# The rathole token comes from RATHOLE_TOKEN (set in your .env, NOT committed).
+# The mounted rathole-server.toml is a template; the rathole wrapper image
+# substitutes ${RATHOLE_TOKEN} into it at container start.
 
 services:
   caddy:
@@ -16,12 +20,13 @@ services:
       - caddy-config:/config
 
   rathole:
-    image: rapiz1/rathole:latest
+    build: ./rathole
     restart: unless-stopped
     network_mode: host
+    environment:
+      RATHOLE_TOKEN: ${RATHOLE_TOKEN:?set RATHOLE_TOKEN in your .env}
     volumes:
-      - ./rathole-server.toml:/app/config.toml:ro
-    command: ["config.toml"]     # entrypoint is ./rathole
+      - ./rathole-server.toml:/app/config.template.toml:ro
 
 volumes:
   caddy-data:

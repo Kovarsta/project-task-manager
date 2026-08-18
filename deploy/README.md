@@ -39,7 +39,8 @@ Only **two** inbound ports are required:
 
 ```bash
 cp deploy/Caddyfile          /etc/caddy/Caddyfile
-cp deploy/rathole-server.toml /etc/rathole/server.toml
+# replace ${RATHOLE_TOKEN} with your token first
+envsubst < deploy/rathole-server.toml > /etc/rathole/server.toml
 systemctl enable --now caddy
 systemctl enable --now rathole   # systemd unit: rathole /etc/rathole/server.toml
 ```
@@ -47,7 +48,8 @@ systemctl enable --now rathole   # systemd unit: rathole /etc/rathole/server.tom
 Or skip bare-metal installs and run both as a compose bundle instead:
 
 ```bash
-docker compose -f deploy/docker-compose.server.yml up -d
+# --project-directory . makes compose read the repo-root .env (RATHOLE_TOKEN)
+docker compose --project-directory . -f deploy/docker-compose.server.yml up -d
 ```
 
 The bundle uses host networking so the same `Caddyfile` and
@@ -81,7 +83,8 @@ Caddy terminates TLS inside Lightsail; set Cloudflare SSL/TLS mode to
    rathole client which dials out to the Lightsail box).
 2. Nothing else needed — the `tunnel` service mounts
    `deploy/rathole-client.toml` and reconnects automatically if the connection
-   drops.
+   drops. Both the homelab `.env` and the Lightsail `.env` must define
+   `RATHOLE_TOKEN` (see below).
 
 ## App environment
 
@@ -103,18 +106,26 @@ XFF_DEPTH=1
 
 ## Rotating the tunnel token
 
-The token in both `deploy/*.toml` files must match. Generate a new one with:
+The token is **not** stored in the repo. The committed `deploy/*.toml` files are
+templates containing `${RATHOLE_TOKEN}`; a wrapper image (see
+`deploy/rathole/`) substitutes the value from the `RATHOLE_TOKEN` environment
+variable at container start. Both sides read it from their own `.env`.
+
+Generate a new one with:
 
 ```bash
 openssl rand -base64 24
 ```
 
-...and update both files before first deploy (or on rotation). After changing
-the files, restart both sides:
+Update `RATHOLE_TOKEN` in **both** `.env` files (homelab and Lightsail), then
+restart both sides:
 
 ```bash
 # Lightsail
-docker compose -f deploy/docker-compose.server.yml restart rathole
+docker compose --project-directory . -f deploy/docker-compose.server.yml up -d --build rathole
 # Homelab
-docker compose up -d --force-recreate tunnel
+docker compose up -d --build tunnel
 ```
+
+The `${RATHOLE_TOKEN:?}` guard in both compose files fails fast if the variable
+is missing.

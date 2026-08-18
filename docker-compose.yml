@@ -69,12 +69,13 @@ services:
   # rathole client: exposes the local app (port 3000) through the public
   # Lightsail server. Dial-out only — no inbound ports needed on this box.
   tunnel:
-    image: rapiz1/rathole:latest
+    build: ./deploy/rathole
     restart: unless-stopped
     network_mode: host
+    environment:
+      RATHOLE_TOKEN: ${RATHOLE_TOKEN:?set RATHOLE_TOKEN in your .env}
     volumes:
-      - ./deploy/rathole-client.toml:/app/config.toml:ro
-    command: ["config.toml"]
+      - ./deploy/rathole-client.toml:/app/config.template.toml:ro
 
   pgadmin:
     image: dpage/pgadmin4
