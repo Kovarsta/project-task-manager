@@ -20,7 +20,7 @@ services:
       - caddy-config:/config
 
   rathole:
-    build: ./rathole
+    build: ./deploy/rathole
     restart: unless-stopped
     network_mode: host
     environment:
