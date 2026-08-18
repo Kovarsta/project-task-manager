@@ -154,6 +154,8 @@ docker compose up -d
 
 This starts PostgreSQL, PgBouncer (connection pool), Redis (cache + rate limiter), and the app (port 3000). Add `--profile tools` for pgAdmin (port 8080). The app connects to Postgres through PgBouncer for efficient connection pooling under load. All config comes from your `.env` file or environment defaults.
 
+When exposed to the internet (see `deploy/`), the `tunnel` service runs a rathole client that forwards the app to the public endpoint; set `ORIGIN=https://your-domain` and `ADDRESS_HEADER=x-forwarded-for`/`XFF_DEPTH=1` for the rate limiter to key on real client IPs.
+
 ---
 
 ## Load Testing

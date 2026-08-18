@@ -1,0 +1,12 @@
+# rathole SERVER — Lightsail (public)
+# Run: rathole rathole-server.toml
+# Ports:
+#   2333 = control channel (clients connect here)
+#   8080 = exposed HTTP port (Caddy reverse-proxies 127.0.0.1:8080)
+
+[server]
+bind_addr = "0.0.0.0:2333"
+
+[server.services.task-app]
+token = "nGN8G-WiN1ig-aL3LL0pAdyfKtHCjO-0"
+bind_addr = "0.0.0.0:8080"
