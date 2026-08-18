@@ -8,5 +8,5 @@
 bind_addr = "0.0.0.0:2333"
 
 [server.services.task-app]
-token = "nGN8G-WiN1ig-aL3LL0pAdyfKtHCjO-0"
+token = "${RATHOLE_TOKEN}"
 bind_addr = "0.0.0.0:8080"

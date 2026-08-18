@@ -11,5 +11,5 @@
 remote_addr = "tunnel.kovarsta.com:2333"
 
 [client.services.task-app]
-token = "nGN8G-WiN1ig-aL3LL0pAdyfKtHCjO-0"
+token = "${RATHOLE_TOKEN}"
 local_addr = "127.0.0.1:3000"
