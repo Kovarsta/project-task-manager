@@ -48,8 +48,9 @@ systemctl enable --now rathole   # systemd unit: rathole /etc/rathole/server.tom
 Or skip bare-metal installs and run both as a compose bundle instead:
 
 ```bash
-# --project-directory . makes compose read the repo-root .env (RATHOLE_TOKEN)
-docker compose --project-directory . -f deploy/docker-compose.server.yml up -d
+# The rathole token lives in deploy/.env (gitignored, not committed)
+cp .env.example deploy/.env   # then set RATHOLE_TOKEN in deploy/.env
+docker compose -f deploy/docker-compose.server.yml up -d
 ```
 
 The bundle uses host networking so the same `Caddyfile` and
@@ -122,7 +123,7 @@ restart both sides:
 
 ```bash
 # Lightsail
-docker compose --project-directory . -f deploy/docker-compose.server.yml up -d --build rathole
+docker compose -f deploy/docker-compose.server.yml up -d --build rathole
 # Homelab
 docker compose up -d --build tunnel
 ```
