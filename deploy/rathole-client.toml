@@ -1,0 +1,15 @@
+# rathole CLIENT — homelab (behind NAT)
+# Run: rathole rathole-client.toml
+# Forwards the public endpoint (task.kovarsta.com:443 -> Caddy -> 8080)
+# through the tunnel to the local app on port 3000.
+#
+# IMPORTANT: remote_addr must NOT be behind the Cloudflare orange cloud.
+# Cloudflare only proxies HTTP/HTTPS; port 2333 is raw TCP. Use the grey-cloud
+# (DNS-only) hostname below (tunnel.kovarsta.com), or the raw Lightsail IP.
+
+[client]
+remote_addr = "tunnel.kovarsta.com:2333"
+
+[client.services.task-app]
+token = "nGN8G-WiN1ig-aL3LL0pAdyfKtHCjO-0"
+local_addr = "127.0.0.1:3000"

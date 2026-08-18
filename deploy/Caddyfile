@@ -1,0 +1,7 @@
+# Caddy — Lightsail (public) reverse proxy
+# Place at /etc/caddy/Caddyfile, then: systemctl reload caddy
+# Caddy auto-provisions TLS for task.kovarsta.com via Let's Encrypt.
+
+task.kovarsta.com {
+	reverse_proxy 127.0.0.1:8080
+}

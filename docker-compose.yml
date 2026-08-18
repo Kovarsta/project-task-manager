@@ -54,12 +54,27 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@pgbouncer:5432/projectmanager?pgbouncer=true
       DIRECT_URL: postgresql://postgres:postgres@db:5432/projectmanager
       REDIS_URL: redis://redis:6379
-      ORIGIN: http://localhost:3000
+      # Local default; override to https://task.kovarsta.com in production
+      ORIGIN: ${ORIGIN:-http://localhost:3000}
+      # Trust the X-Forwarded-For added by Caddy (via the rathole tunnel) so the
+      # rate limiter keys on the real client IP. Leave empty when accessed directly.
+      ADDRESS_HEADER: ${ADDRESS_HEADER:-}
+      XFF_DEPTH: ${XFF_DEPTH:-0}
     depends_on:
       pgbouncer:
         condition: service_started
       redis:
         condition: service_healthy
+
+  # rathole client: exposes the local app (port 3000) through the public
+  # Lightsail server. Dial-out only — no inbound ports needed on this box.
+  tunnel:
+    image: rapiz1/rathole:latest
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./deploy/rathole-client.toml:/app/config.toml:ro
+    command: ["config.toml"]
 
   pgadmin:
     image: dpage/pgadmin4

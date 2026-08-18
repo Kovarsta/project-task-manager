@@ -1,0 +1,28 @@
+# Server-node bundle: Caddy + rathole server (Lightsail/public box)
+# Usage: docker compose -f deploy/docker-compose.server.yml up -d
+#
+# Uses host networking so the existing Caddyfile (reverse_proxy 127.0.0.1:8080)
+# and rathole-server.toml (bind 0.0.0.0:2333 / 0.0.0.0:8080) work unchanged.
+# Inbound rules required: 443/tcp (Caddy), 2333/tcp (rathole control channel).
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data          # Let's Encrypt certs
+      - caddy-config:/config
+
+  rathole:
+    image: rapiz1/rathole:latest
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./rathole-server.toml:/app/config.toml:ro
+    command: ["config.toml"]     # entrypoint is ./rathole
+
+volumes:
+  caddy-data:
+  caddy-config:
