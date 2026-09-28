@@ -1,0 +1,23 @@
+# kind cluster definition for local Kubernetes learning.
+# Create with: kind create cluster --config deploy/k8s/kind-config.yaml
+#
+# extraPortMappings map host ports 8080/8443 -> node ports 80/443 so that a
+# later Ingress controller can be reached from Windows without admin rights.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: vlu
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 8080
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 8443
+        protocol: TCP
