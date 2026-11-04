@@ -53,8 +53,8 @@ Built as an internship project.
 ### Installation
 
 ```bash
-git clone https://github.com/kovarsta/task-management.git
-cd task-management
+git clone https://github.com/Kovarsta/project-task-manager.git
+cd project-task-manager
 pnpm install
 npx prisma generate
 ```
